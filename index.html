@@ -334,7 +334,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-13（27）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-13（28）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -824,10 +824,8 @@ async function loadPhoto(f){
   const W0=src.width, H0=src.height, k=Math.min(1,1800/Math.max(W0,H0));
   photo=document.createElement("canvas"); photo.width=Math.round(W0*k); photo.height=Math.round(H0*k);
   photo.getContext("2d").drawImage(src,0,0,photo.width,photo.height);
-  // 文字を読む時用に、細かいままの写真も持っておく（保存はしない）
-  if(photoHi){ photoHi.width=0; photoHi.height=0; photoHi=null; }
-  const kh=Math.min(1,4096/Math.max(W0,H0));
-  if(kh>k*1.15){ try{ photoHi=document.createElement("canvas"); photoHi.width=Math.round(W0*kh); photoHi.height=Math.round(H0*kh); photoHi.getContext("2d").drawImage(src,0,0,photoHi.width,photoHi.height); }catch(e){ photoHi=null; } }
+  // 文字を読む時用に、元の写真ファイルを覚えておく（細かい写真は読む瞬間だけ作ってすぐ捨てる。保存はしない）
+  photoHi=(k<0.87)?{file:f,W:W0,H:H0}:null;
   if(src.close) src.close();
   pc.width=photo.width; pc.height=photo.height; pc.getContext("2d").drawImage(photo,0,0);
   sel=null; selbox.hidden=true; setCamLang(camLang); hereBtn.disabled=true; camView.hidden=false; pz=1; pc.style.width=baseW()+"px"; photoEl.scrollLeft=0; photoEl.scrollTop=0; camRes.innerHTML=""; wordInfo.innerHTML=""; cstat.textContent="";
@@ -1181,12 +1179,12 @@ async function showEnglishOcr(text){
 }
 
 /* ===== 読みがな（kuromoji：無料の形態素解析）と意味（ウィクショナリー・ウィキペディア） ===== */
-let kuroP=null;
+let kuroP=null, kuroReady=false;
 function loadKuromoji(){
   if(!kuroP) kuroP=new Promise((resolve,reject)=>{
     // 辞書の置き場所を2か所用意し、片方がだめならもう片方を使う
     const paths=["https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/","https://unpkg.com/kuromoji@0.1.2/dict/"];
-    const go=(i=0)=>window.kuromoji.builder({dicPath:paths[i]}).build((e,tk)=>{ if(!e) return resolve(tk); if(i+1<paths.length) go(i+1); else reject(e); });
+    const go=(i=0)=>window.kuromoji.builder({dicPath:paths[i]}).build((e,tk)=>{ if(!e){ kuroReady=true; return resolve(tk); } if(i+1<paths.length) go(i+1); else reject(e); });
     if(window.kuromoji) return go(0);
     const sc=document.createElement("script");
     sc.src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js";
@@ -1293,7 +1291,7 @@ async function fuzzyIndex(){
   if(FUZ) return FUZ;
   try{ await loadMed(); }catch(e){ return null; }
   FUZ=new Map(); const add=(w)=>{ const cs=[...w]; if(cs.length<3||cs.length>8||!hasKanji(w)) return; for(let i=0;i<cs.length;i++){ if(!/[\u3400-\u9fff]/.test(cs[i])) continue; const k=cs.slice(0,i).join("")+"?"+cs.slice(i+1).join(""); const a=FUZ.get(k); if(!a) FUZ.set(k,[w]); else if(!a.includes(w)&&a.length<4) a.push(w); } };
-  if(Array.isArray(MEDW)) for(const w of MEDW) if(w&&w[0]) add(w[0]);
+  for(const w of (Array.isArray(MEDW)?MEDW:String(MEDW).split("\n").map(l=>l.split("|")))) if(w&&w[0]) add(w[0]);
   for(const e of MED) for(const k of e.ks) add(k);
   return FUZ;
 }
@@ -1329,7 +1327,7 @@ async function fuzzyFix(line,tk){
 let MEDWMAP=null;
 function toKata(s){ return s.replace(/[\u3041-\u3096]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60)); }
 function dictReading(w){
-  if(!MEDWMAP){ MEDWMAP=new Map(); for(const w of (Array.isArray(MEDW)?MEDW:[])){ if(w&&w[0]&&w[1]&&!MEDWMAP.has(w[0])) MEDWMAP.set(w[0],w[1]); } }
+  if(!MEDWMAP){ MEDWMAP=new Map(); const rows=Array.isArray(MEDW)?MEDW:String(MEDW).split("\n").map(l=>l.split("|")); for(const w of rows){ if(w&&w[0]&&w[1]&&!MEDWMAP.has(w[0])) MEDWMAP.set(w[0],w[1]); } }
   if(MEDWMAP.has(w)) return MEDWMAP.get(w);
   const es=MEDJA&&MEDJA.get(w); if(!es) return "";
   for(const e of es) if(e.ks.includes(w)&&e.ka[0]) return toHira(e.ka[0]);
@@ -1362,7 +1360,9 @@ async function showWordResult(text,info){
   // 英語だけの時は英和辞書で意味を出す
   if(!/[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff々]/.test(all) && /[A-Za-z]{2,}/.test(all)){ return showEnglishOcr(lines.join("\n")); }
   cstat.textContent="読みがなを調べています（初回は辞書の準備に少し時間がかかります）…";
-  let tk=null; try{ tk=await loadKuromoji(); }catch(e){ cstat.textContent="読みがなの辞書を読み込めませんでした。電波の良い所で、もう一度押してください。"; }
+  const myGen=camGen;
+  let tk=null; try{ tk=await loadKuromoji(); }catch(e){ if(myGen===camGen) cstat.textContent="読みがなの辞書を読み込めませんでした。電波の良い所で、もう一度押してください。"; }
+  if(myGen!==camGen) return;
   // 読み違いの直しと、切れ端の行の取り除き（全部消えてしまう時は元のまま）
   if(tk) items=items.map(x=>({t:fixLookalike(x.t,tk),c:x.c}));
   if(tk) for(const x of items) x.t=await fuzzyFix(x.t,tk);
@@ -1479,9 +1479,19 @@ async function ocrTry(img,lang,psm){
   const score=(r.data.confidence||0)+Math.min(jpCount(text),20);
   return {text,lines:lines.length?lines:null,score,conf:r.data.confidence||0,lang,psm};
 }
+let camGen=0;
+function stopOcrWorkers(){ for(const k in ocrWorkers){ const w=ocrWorkers[k]; ocrWorkers[k]=null; if(w) w.then(x=>x.terminate()).catch(()=>{}); } }
+function camStopUI(on){
+  let b=document.getElementById("camStop");
+  if(!b){ b=document.createElement("button"); b.type="button"; b.id="camStop"; b.className="btn"; b.textContent="✋ 中止する"; b.style.marginTop="8px"; b.style.width="100%";
+    b.onclick=()=>{ camGen++; stopOcrWorkers(); ocrLog=null; camBusy=false; furiBtn.disabled=false; hereBtn.disabled=!sel; camStopUI(false); cstat.textContent="中止しました。囲み直すか、もう一度押してください。"; };
+    cstat.insertAdjacentElement("afterend",b); }
+  b.hidden=!on;
+}
 async function runOCRPlan(img,plan){
   if(camBusy) return;
-  camBusy=true; furiBtn.disabled=true; hereBtn.disabled=true;
+  const myGen=++camGen;
+  camBusy=true; furiBtn.disabled=true; hereBtn.disabled=true; camStopUI(true);
   camRes.innerHTML=""; wordInfo.innerHTML="";
   let step=0;
   ocrLog=m=>{
@@ -1497,12 +1507,16 @@ async function runOCRPlan(img,plan){
     for(const [lang,psm,stopAt] of plan){
       step++;
       const r=await ocrTry(prepped,lang,psm);
+      if(myGen!==camGen) return;
       if(!best||r.score>best.score) best=r;
       if(stopAt && best.conf>=stopAt) break;   // 十分良ければ残りは省略して時間短縮
     }
+    if(myGen!==camGen) return;
+    // 読みがなの辞書は大きいので、初めて使う時は読み取り用の作業者を片付けてメモリを空ける
+    if(camLang!=="eng"&&!kuroReady) stopOcrWorkers();
     await (camLang==="eng"?showEnglishOcr:showWordResult)(best?best.text:"",best?best.lines:null);
-  }catch(e){ cstat.textContent="読み取りに失敗しました。通信を確認して、もう一度お試しください。"; }
-  finally{ ocrLog=null; camBusy=false; furiBtn.disabled=false; hereBtn.disabled=!sel; }
+  }catch(e){ if(myGen===camGen) cstat.textContent="読み取りに失敗しました。通信を確認して、もう一度お試しください。"; }
+  finally{ if(myGen===camGen){ ocrLog=null; camBusy=false; furiBtn.disabled=false; hereBtn.disabled=!sel; camStopUI(false); } }
 }
 function runPhotoOCR(source){
   if(!source) return;
@@ -1512,20 +1526,30 @@ function runPhotoOCR(source){
   if(s>1.05){ img=document.createElement("canvas"); img.width=Math.round(source.width*s); img.height=Math.round(source.height*s); const g=img.getContext("2d"); g.imageSmoothingQuality="high"; g.drawImage(source,0,0,img.width,img.height); }
   runOCRPlan(img,[["jpn",3,75],["jpn_vert",5]]);
 }
-function runSelectionOCR(){
+async function runSelectionOCR(){
   if(!photo||!sel||camBusy) return;
   const x0=Math.max(0,Math.floor(sel.x)), y0=Math.max(0,Math.floor(sel.y));
   const x1=Math.min(photo.width,Math.ceil(sel.x+sel.w)), y1=Math.min(photo.height,Math.ceil(sel.y+sel.h));
   const cw=Math.max(1,x1-x0), ch=Math.max(1,y1-y0);
-  // 細かいままの写真があれば、そこから切り出す（小さい字の線がつぶれない）
-  const srcImg=photoHi||photo, f=srcImg.width/photo.width;
+  // 細かい元の写真があれば、読む瞬間だけ開いて切り出し、すぐ捨てる（小さい字の線がつぶれない・メモリを使い続けない）
+  let srcImg=photo, tmp=null;
+  if(photoHi){
+    try{
+      const kk=Math.min(1,4096/Math.max(photoHi.W,photoHi.H));
+      const o={imageOrientation:"from-image"}; if(kk<1){ o.resizeWidth=Math.round(photoHi.W*kk); o.resizeHeight=Math.round(photoHi.H*kk); o.resizeQuality="high"; }
+      tmp=await createImageBitmap(photoHi.file,o); srcImg=tmp;
+    }catch(e){ srcImg=photo; tmp=null; }
+  }
+  const f=srcImg.width/photo.width;
   const hx=x0*f, hy=y0*f, hw=cw*f, hh=ch*f;
-  // 小さく囲んだ文字は拡大（文字が十分な大きさになるように）
-  const scale=Math.min(4,Math.max(1,1200/Math.max(hw,hh)));
+  // 文字の大きさをそろえる：小さく囲んだ時は拡大、大きく囲んだ時は縮小（大きすぎると読むのに時間がかかりすぎる）
+  const m=Math.max(hw,hh);
+  const scale=m<1200?Math.min(4,1200/m):(m>1600?1600/m:1);
   const big=document.createElement("canvas");
-  big.width=Math.round(hw*scale); big.height=Math.round(hh*scale);
+  big.width=Math.max(1,Math.round(hw*scale)); big.height=Math.max(1,Math.round(hh*scale));
   const bg=big.getContext("2d"); bg.imageSmoothingEnabled=true; bg.imageSmoothingQuality="high";
   bg.drawImage(srcImg,hx,hy,hw,hh,0,0,big.width,big.height);
+  if(tmp&&tmp.close) tmp.close();
   // 囲みの形から、縦書き・横書き・1文字を見分けて読み方を選ぶ
   const r=ch/cw; let plan;
   if(camLang==="eng"){ runOCRPlan(big, r<0.3?[["eng",7,80],["eng",6]]:[["eng",6,80],["eng",7]]); return; }

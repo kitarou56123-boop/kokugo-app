@@ -334,7 +334,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-13（28）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-13（29）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1179,20 +1179,40 @@ async function showEnglishOcr(text){
 }
 
 /* ===== 読みがな（kuromoji：無料の形態素解析）と意味（ウィクショナリー・ウィキペディア） ===== */
-let kuroP=null, kuroReady=false;
+let kuroP=null, kuroReady=false, kuroW=null;
+// 読みがなの辞書（約17MB）は、画面を止めないように裏方（ワーカー）で準備して使う
+const KURO_SRC=`
+let tk=null;
+const paths=["https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/","https://unpkg.com/kuromoji@0.1.2/dict/"];
+function build(i){ kuromoji.builder({dicPath:paths[i]}).build((e,t)=>{ if(e){ if(i+1<paths.length) build(i+1); else postMessage({type:"err",msg:String(e)}); return; } tk=t; postMessage({type:"ready"}); }); }
+try{ importScripts("https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"); build(0); }
+catch(e){ try{ importScripts("https://unpkg.com/kuromoji@0.1.2/build/kuromoji.js"); build(1); }catch(e2){ postMessage({type:"err",msg:String(e2)}); } }
+onmessage=(ev)=>{ const d=ev.data; let out;
+  try{ out=d.texts.map(s=>tk.tokenize(s).map(x=>({surface_form:x.surface_form,reading:x.reading,pos:x.pos,pos_detail_1:x.pos_detail_1,basic_form:x.basic_form,word_type:x.word_type}))); }
+  catch(e){ out=d.texts.map(()=>[]); }
+  postMessage({type:"res",id:d.id,out}); };
+`;
 function loadKuromoji(){
   if(!kuroP) kuroP=new Promise((resolve,reject)=>{
-    // 辞書の置き場所を2か所用意し、片方がだめならもう片方を使う
-    const paths=["https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/","https://unpkg.com/kuromoji@0.1.2/dict/"];
-    const go=(i=0)=>window.kuromoji.builder({dicPath:paths[i]}).build((e,tk)=>{ if(!e){ kuroReady=true; return resolve(tk); } if(i+1<paths.length) go(i+1); else reject(e); });
-    if(window.kuromoji) return go(0);
-    const sc=document.createElement("script");
-    sc.src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js";
-    sc.onload=()=>go(); sc.onerror=()=>reject(new Error("load"));
-    document.head.appendChild(sc);
-  }).catch(e=>{ kuroP=null; throw e; });
+    let w;
+    try{ w=new Worker(URL.createObjectURL(new Blob([KURO_SRC],{type:"text/javascript"}))); }catch(e){ return reject(e); }
+    const pend=new Map(); let seq=0; const cache=new Map();
+    const fail=(msg)=>{ for(const [,p] of pend) p.rej(new Error(msg)); pend.clear(); kuroP=null; kuroReady=false; kuroW=null; try{ w.terminate(); }catch(e){} reject(new Error(msg)); };
+    w.onerror=(e)=>{ e.preventDefault&&e.preventDefault(); fail("worker"); };
+    w.onmessage=(ev)=>{ const d=ev.data;
+      if(d.type==="ready"){ kuroReady=true; kuroW=w;
+        const ask=(texts)=>new Promise((res,rej)=>{ const id=++seq; pend.set(id,{res,rej}); w.postMessage({id,texts}); });
+        resolve({
+          // 何回も同じ言葉を調べるので、結果を覚えておく
+          async toks(texts){ const need=[...new Set(texts.filter(t=>!cache.has(t)))]; if(need.length){ const out=await ask(need); need.forEach((t,i)=>{ if(cache.size>3000) cache.clear(); cache.set(t,out[i]); }); } return texts.map(t=>cache.get(t)||[]); },
+          async tok(text){ return (await this.toks([text]))[0]; }
+        });
+      } else if(d.type==="err") fail(d.msg);
+      else if(d.type==="res"){ const p=pend.get(d.id); if(p){ pend.delete(d.id); p.res(d.out); } }
+    };
+  });
   // 電波が悪い時などに、いつまでも待ち続けないようにする
-  return Promise.race([kuroP,new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),90000))]);
+  return Promise.race([kuroP,new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),120000))]);
 }
 const kata2hira=s=>String(s||"").replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
 const hasKanji=s=>/[\u3400-\u9fff\uf900-\ufaff々]/.test(s);
@@ -1250,14 +1270,14 @@ const LOOKALIKE=["減滅","未末","士土","己已巳","日曰","人入","千�
 const LOOK=new Map();
 for(const g of LOOKALIKE) for(const ch of g) LOOK.set(ch,[...g].filter(x=>x!==ch));
 // 似た字に置きかえると辞書にある熟語になる時だけ直す（例：仏減→仏滅）
-function fixLookalike(line,tk){
-  let cur=line, n=tk.tokenize(cur).length;
+async function fixLookalike(line,tk){
+  let cur=line, n=(await tk.tok(cur)).length;
   for(let pass=0;pass<3;pass++){
     let changed=false; const cs=[...cur];
     outer: for(let i=0;i<cs.length;i++){
       const alts=LOOK.get(cs[i]); if(!alts) continue;
       for(const a of alts){
-        const t=[...cs]; t[i]=a; const s2=t.join(""); const toks=tk.tokenize(s2);
+        const t=[...cs]; t[i]=a; const s2=t.join(""); const toks=await tk.tok(s2);
         let pos=0, ok=false;
         for(const x of toks){ const L=[...x.surface_form].length; if(i>=pos&&i<pos+L){ ok=L>=2&&x.word_type==="KNOWN"&&hasKanji(x.surface_form); break; } pos+=L; }
         if(ok&&toks.length<n){ cur=s2; n=toks.length; changed=true; break outer; }
@@ -1268,8 +1288,8 @@ function fixLookalike(line,tk){
   return cur;
 }
 // 意味のある言葉がなく、1文字ずつバラバラの行は、囲みの端に入った文字の切れ端とみなす
-function isJunkLine(line,tk){
-  const toks=tk.tokenize(line).filter(x=>x.surface_form.trim());
+async function isJunkLine(line,tk){
+  const toks=(await tk.tok(line)).filter(x=>x.surface_form.trim());
   if(!toks.length) return true;
   if(toks.some(x=>[...x.surface_form].length>=2&&hasKanji(x.surface_form)&&x.word_type==="KNOWN")) return false;
   return toks.length>=4&&toks.filter(x=>[...x.surface_form].length===1).length/toks.length>=0.7;
@@ -1296,9 +1316,9 @@ async function fuzzyIndex(){
   return FUZ;
 }
 let FUZTK=null;
-function knownWord(w){
+async function knownWord(w){
   if(dictReading(w)) return true;
-  if(FUZTK){ const t=FUZTK.tokenize(w); return t.length===1&&t[0].word_type==="KNOWN"; }
+  if(FUZTK){ const t=await FUZTK.tok(w); return t.length===1&&t[0].word_type==="KNOWN"; }
   return false;
 }
 async function fuzzyFix(line,tk){
@@ -1310,12 +1330,12 @@ async function fuzzyFix(line,tk){
     for(let st=0;st+L<=cs.length;st++){
       const sub=cs.slice(st,st+L).join("");
       if(!hasKanji(sub)||dictReading(sub)) continue;
-      { const tt=FUZTK.tokenize(sub); if(tt.every(x=>x.word_type==="KNOWN"&&([...x.surface_form].length>=2||!hasKanji(x.surface_form)))) continue; }
+      { const tt=await FUZTK.tok(sub); if(tt.every(x=>x.word_type==="KNOWN"&&([...x.surface_form].length>=2||!hasKanji(x.surface_form)))) continue; }
       const hits=new Set();
       for(let i=0;i<L;i++){
         const p=st+i; if(!/[\u3400-\u9fff]/.test(cs[p])) continue;
         // その字が前後の字と普通の言葉になっている時は、読み違いではないので直さない（例：管理、義肢）
-        if((p>0&&knownWord(cs[p-1]+cs[p]))||(p+1<cs.length&&knownWord(cs[p]+cs[p+1]))) continue;
+        if((p>0&&await knownWord(cs[p-1]+cs[p]))||(p+1<cs.length&&await knownWord(cs[p]+cs[p+1]))) continue;
         const k=cs.slice(st,p).join("")+"?"+cs.slice(p+1,st+L).join(""); const a=idx.get(k); if(a) for(const w of a) hits.add(w);
       }
       if(hits.size===1){ const w=[...hits][0]; cs=[...cs.slice(0,st),...w,...cs.slice(st+L)]; }
@@ -1364,9 +1384,10 @@ async function showWordResult(text,info){
   let tk=null; try{ tk=await loadKuromoji(); }catch(e){ if(myGen===camGen) cstat.textContent="読みがなの辞書を読み込めませんでした。電波の良い所で、もう一度押してください。"; }
   if(myGen!==camGen) return;
   // 読み違いの直しと、切れ端の行の取り除き（全部消えてしまう時は元のまま）
-  if(tk) items=items.map(x=>({t:fixLookalike(x.t,tk),c:x.c}));
+  if(tk) for(const x of items){ x.t=await fixLookalike(x.t,tk); if(myGen!==camGen) return; }
   if(tk) for(const x of items) x.t=await fuzzyFix(x.t,tk);
-  const good=items.filter(x=>!(x.c!=null&&x.c<45)&&!(tk&&isJunkLine(x.t,tk)));
+  const junkFlags=[]; for(const x of items) junkFlags.push(tk?await isJunkLine(x.t,tk):false);
+  const good=items.filter((x,i)=>!(x.c!=null&&x.c<45)&&!junkFlags[i]);
   if(good.length) items=good;
   lines=items.map(x=>x.t); all=lines.join("");
   // 1) 読み取った文字にふりがなを付けて表示
@@ -1374,7 +1395,7 @@ async function showWordResult(text,info){
   const toks=[], lineToks=[];
   if(tk){
     for(const line of lines){
-      let tt=await fixReadings(tk.tokenize(line));
+      let tt=await fixReadings(await tk.tok(line));
       // 囲みの端に入った文字の切れ端（例：健診ンズ の「ンズ」）を前後から取り除く
       const junk=x=>!hasKanji(x.surface_form)&&(x.word_type==="UNKNOWN"||/^[ンッーァィゥェォャュョヮヵヶっぁぃぅぇぉゃゅょゎん]/.test(x.surface_form)||/^[\s\p{P}\p{S}]+$/u.test(x.surface_form));
       if(tt.some(x=>hasKanji(x.surface_form))){ while(tt.length>1&&junk(tt[tt.length-1])) tt.pop(); while(tt.length>1&&junk(tt[0])) tt.shift(); }
@@ -1398,7 +1419,7 @@ async function showWordResult(text,info){
     let run=[];
     const flush=()=>{ if(run.length>=2) push(run.map(x=>x.surface_form).join(""),run.map(x=>x.reading||x.surface_form).join(""),false); run=[]; };
     for(const x of toks){ if(x.pos==="名詞") run.push(x); else flush(); } flush();
-    for(const x of toks) if(content(x)){ const base=x.basic_form&&x.basic_form!=="*"?x.basic_form:x.surface_form; const rd=base===x.surface_form?x.reading:(tk.tokenize(base).map(y=>y.reading||y.surface_form).join("")); push(base,rd,true); }
+    for(const x of toks) if(content(x)){ const base=x.basic_form&&x.basic_form!=="*"?x.basic_form:x.surface_form; const rd=base===x.surface_form?x.reading:((await tk.tok(base)).map(y=>y.reading||y.surface_form).join("")); push(base,rd,true); }
   } else push(all,"",true);
   const engShown=await addEnglishCards(all);
   if(!cands.length){ if(tk) cstat.textContent=engShown?"読み取りが終わりました。英単語の意味を下に表示しています。":"読み取りが終わりました。"; return; }

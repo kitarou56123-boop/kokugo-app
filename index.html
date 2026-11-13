@@ -334,7 +334,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-13（26）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-13（27）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1193,7 +1193,8 @@ function loadKuromoji(){
     sc.onload=()=>go(); sc.onerror=()=>reject(new Error("load"));
     document.head.appendChild(sc);
   }).catch(e=>{ kuroP=null; throw e; });
-  return kuroP;
+  // 電波が悪い時などに、いつまでも待ち続けないようにする
+  return Promise.race([kuroP,new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),90000))]);
 }
 const kata2hira=s=>String(s||"").replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
 const hasKanji=s=>/[\u3400-\u9fff\uf900-\ufaff々]/.test(s);
@@ -1302,8 +1303,8 @@ function knownWord(w){
   if(FUZTK){ const t=FUZTK.tokenize(w); return t.length===1&&t[0].word_type==="KNOWN"; }
   return false;
 }
-async function fuzzyFix(line){
-  if(!FUZTK){ try{ FUZTK=await loadKuromoji(); }catch(e){} }
+async function fuzzyFix(line,tk){
+  if(tk) FUZTK=tk;
   if(!FUZTK) return line;   // 単語の辞書がない時は、むやみに直さない
   const idx=await fuzzyIndex(); if(!idx) return line;
   let cs=[...line];
@@ -1361,10 +1362,10 @@ async function showWordResult(text,info){
   // 英語だけの時は英和辞書で意味を出す
   if(!/[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff々]/.test(all) && /[A-Za-z]{2,}/.test(all)){ return showEnglishOcr(lines.join("\n")); }
   cstat.textContent="読みがなを調べています（初回は辞書の準備に少し時間がかかります）…";
-  let tk=null; try{ tk=await loadKuromoji(); }catch(e){}
+  let tk=null; try{ tk=await loadKuromoji(); }catch(e){ cstat.textContent="読みがなの辞書を読み込めませんでした。電波の良い所で、もう一度押してください。"; }
   // 読み違いの直しと、切れ端の行の取り除き（全部消えてしまう時は元のまま）
   if(tk) items=items.map(x=>({t:fixLookalike(x.t,tk),c:x.c}));
-  for(const x of items) x.t=await fuzzyFix(x.t);
+  if(tk) for(const x of items) x.t=await fuzzyFix(x.t,tk);
   const good=items.filter(x=>!(x.c!=null&&x.c<45)&&!(tk&&isJunkLine(x.t,tk)));
   if(good.length) items=good;
   lines=items.map(x=>x.t); all=lines.join("");

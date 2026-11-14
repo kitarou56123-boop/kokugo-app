@@ -331,7 +331,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（34）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（35）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -967,18 +967,21 @@ function setCamLang(l){
 }
 mJa.onclick=()=>setCamLang("jpn"); mEn.onclick=()=>setCamLang("eng");
 
-let EJ=null, EJP=null, EJREV=null;
+let EJ=null, EJP=null, EJREV=null, EJALL=[];
 const EJTOP=new Set(EJFREQ.map(w=>w.toLowerCase()));
 function loadEJ(){
   if(!EJP) EJP=(async()=>{
     const bin=Uint8Array.from(atob(EJZ),c=>c.charCodeAt(0));
     const st=new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"));
     const txt=await new Response(st).text();
-    EJ=new Map();
+    EJ=new Map(); EJALL=[];
     for(const line of txt.split("\n")){
       const i=line.indexOf("\t"); if(i<1) continue;
       const m=line.slice(i+1);
-      for(const w of line.slice(0,i).split(",")){ const k=w.trim().toLowerCase(); if(!k) continue; if(!EJ.has(k)) EJ.set(k,{w:w.trim(),m}); }
+      for(const w of line.slice(0,i).split(",")){ const ww=w.trim(), k=ww.toLowerCase(); if(!k) continue;
+        // 大文字の固有名詞（Crow＝クロー族）と普通の単語（crow＝カラス）が同じつづりの時は両方残し、普通の単語を優先する
+        const e={w:ww,m}; EJALL.push(e);
+        if(!EJ.has(k)||(ww===k&&EJ.get(k).w!==k)) EJ.set(k,e); }
     }
     return EJ;
   })().catch(e=>{ EJP=null; throw e; });
@@ -1027,7 +1030,7 @@ function eCard(e,note){
 function buildRev(){
   if(EJREV) return EJREV;
   EJREV=new Map();
-  for(const e of EJ.values()){
+  for(const e of EJALL){
     if(/\s/.test(e.w)&&e.w.split(" ").length>3) continue;
     const parts=e.m.split(/\s*\/\s*/);
     parts.forEach((part,pi)=>{
@@ -1119,7 +1122,16 @@ async function engSearch(){
     if(meds.length){ section("医学・専門用語"); meds.forEach(m=>eres.appendChild(medCard(m))); total+=meds.length; }
     // 和英（一般）
     const rev=buildRev();
-    let list=(rev.get(k)||[]).slice(), partial=false;
+    let list=(rev.get(k)||[]).slice(), partial=false, viaYomi="";
+    // 英和辞書は動物や植物の名前をカタカナで書いていることが多い（例：烏→カラス）ので、漢字で見つからない時は読みでも探す
+    if(!list.length && /[\u3400-\u9fff]/.test(s)){
+      const yomi=[];
+      try{ const tk=await loadKuromoji(); const t=await tk.tok(s); if(t.every(x=>x.reading)) yomi.push(toHira(t.map(x=>x.reading).join(""))); }catch(e){}
+      const d=[...s].length===1&&DB.get(s);
+      if(d) for(const r of d.kun){ const y=r.replace(/-/g,"").split(".")[0]; if(y) yomi.push(y); }
+      if(eq.value.trim()!==s) return;
+      for(const y of [...new Set(yomi)]){ const l=rev.get(y); if(l&&l.length){ list=l.slice(); viaYomi=y; break; } }
+    }
     if(!list.length && !meds.length && [...k].length>=2){
       partial=true;
       for(const [kk,arr] of rev){ if(kk.includes(k)) list.push(...arr.map(x=>({...x,score:x.score+5+(kk.length-k.length)*0.5}))); if(list.length>3000) break; }
@@ -1127,7 +1139,7 @@ async function engSearch(){
     const best=new Map();
     for(const x of list){ const id=x.e.w.toLowerCase(); if(!best.has(id)||best.get(id).score>x.score) best.set(id,x); }
     const arr=[...best.values()].sort((a,b)=>a.score-b.score).slice(0,15);
-    if(arr.length){ section(partial?`意味に「${s}」を含む英単語`:"一般の英単語（上ほどよく使う）"); arr.forEach(x=>eres.appendChild(eCard(x.e,""))); total+=arr.length; }
+    if(arr.length){ section(partial?`意味に「${s}」を含む英単語`:viaYomi?`一般の英単語（「${viaYomi}」の読みで探しました）`:"一般の英単語（上ほどよく使う）"); arr.forEach(x=>eres.appendChild(eCard(x.e,""))); total+=arr.length; }
     // 医学用語の部分一致（例：「骨」→ 大腿骨など）
     if(!meds.length && [...s].length>=2 && /[\u3400-\u9fff]/.test(s)){
       const pm=MED.filter(m=>m.ks.some(x=>x.includes(s))).sort((a,b)=>b.med-a.med||a.ks[0].length-b.ks[0].length).slice(0,10);

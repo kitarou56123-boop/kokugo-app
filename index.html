@@ -395,7 +395,7 @@ window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000))
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（49）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-15（50）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1825,23 +1825,44 @@ furiBtn.onclick=()=>{
 hereBtn.onclick=runSelectionOCR;
 const wordBtn=document.getElementById("wordgo"), rmeta=document.getElementById("rmeta");
 wordBtn.onclick=async()=>{
-  const s=toHira(q.value.trim());
-  if(!s){ rmeta.textContent="先にひらがなを入力してください。"; return; }
-  wordBtn.disabled=true; wordsWrap.innerHTML="";
+  const raw=q.value.trim(), s=toHira(raw);
+  if(!raw){ rmeta.textContent="先に言葉を入力してください（ひらがな・漢字どちらでも）。"; return; }
+  wordBtn.disabled=true; wordsWrap.innerHTML=""; rmeta.textContent="探しています…";
   try{
-    const norm=x=>String(x||"").replace(/[ー・\s]/g,"");
-    const n=norm(s), found=new Map();
-    for(const row of MEDW.split("\n")){
-      const [word,reading,meaning]=row.split("|");
-      if(word && reading && (norm(reading)===n || (n.length>=3 && norm(reading).startsWith(n)))) found.set(word,{word,reading,meaning:meaning||""});
-    }
-    for(const row of [...FISH.split("\n"),...FX.split("\n")]){
-      const [word,reading,meaning]=row.split("|");
-      if(word && reading && (norm(reading)===n || (n.length>=3 && norm(reading).startsWith(n)))) found.set(word,{word,reading,meaning:meaning||""});
-    }
+    const norm=x=>toHira(String(x||"")).replace(/[ー・\s]/g,"");
+    const n=norm(s), hasKanji=/[\u3400-\u9fff\uf900-\ufaff]/.test(raw);
+    const hit=(w,r)=> (hasKanji && w===raw) || (!hasKanji && r && (norm(r)===n || (n.length>=3 && norm(r).startsWith(n))));
+    const found=new Map();
+    const rows=[];
+    try{ for(const x of (Array.isArray(MEDW)?MEDW:[])){ const [w,r,m]=Array.isArray(x)?x:[x.k||x.w,x.r,x.m]; rows.push([w,r,m]); } }catch(e){}
+    try{ for(const x of [...(Array.isArray(FISH)?FISH:[]),...(Array.isArray(FX)?FX:[])]) rows.push([x.k,x.r,[x.m,x.c&&("料理："+x.c)].filter(Boolean).join("　")]); }catch(e){}
+    for(const [w,r,m] of rows) if(w&&hit(w,r)) found.set(w,{word:w,reading:r||"",meaning:m||""});
+    // 専門用語辞書（英語の説明つき）
+    try{ await loadMed(); for(const ent of (MEDJA.get(hasKanji?raw:s)||[])){ const w=ent.ks[0]; if(!found.has(w)) found.set(w,{word:w,reading:ent.ka[0]||"",meaning:"英語："+ent.g.split(" / ")[0]}); } }catch(e){}
     const arr=[...found.values()].slice(0,20);
-    rmeta.textContent=arr.length?"端末内の辞書から候補を表示しています。":"この読みの熟語候補は端末内辞書にありません。1文字検索をご利用ください。";
-    if(arr.length){ const t=document.createElement("p"); t.className="section-t"; t.textContent=`「${s}」の言葉`; wordsWrap.appendChild(t); const box=document.createElement("div"); box.className="words"; wordsWrap.appendChild(box); for(const x of arr) box.appendChild(await wordCard(x.word,x.reading,x.meaning)); }
+    // 漢字で入力された言葉：一字ずつの意味と英語で説明する
+    let own=null;
+    if(hasKanji && !found.has(raw) && !(Array.isArray(KOT)&&KOT.some(x=>x&&x.t===raw))){
+      const parts=[...raw].filter(c=>meaningOf(c)).map(c=>`${c}：${meaningOf(c).text}`);
+      let en=[];
+      try{ await loadEJ(); const rev=buildRev().get(toHira(raw))||[]; en=[...new Map(rev.sort((p,q)=>p.score-q.score).map(x=>[x.e.w.toLowerCase(),x.e.w])).values()].slice(0,5); }catch(e){}
+      if(parts.length||en.length) own={parts,en};
+    }
+    const kots=[]; try{ if(hasKanji) for(const x of (Array.isArray(KOT)?KOT:[])){ if(x&&x.t&&x.t.includes(raw)) kots.push(x); } }catch(e){}
+    if(!arr.length && !own && !kots.length){ rmeta.textContent="この言葉は端末内の辞書にありません。下の漢字を押すと、1字ずつの読み方と意味が見られます。"; return; }
+    rmeta.textContent="";
+    if(own){
+      const t=document.createElement("p"); t.className="section-t"; t.textContent=`「${raw}」`; wordsWrap.appendChild(t);
+      const box=document.createElement("div"); box.className="words"; wordsWrap.appendChild(box);
+      const d=document.createElement("div"); d.className="word"; d.style.flexWrap="wrap"; d.style.display="flex";
+      const info=document.createElement("div"); info.style.flexBasis="100%"; info.style.lineHeight="1.7";
+      if(own.en.length){ const p=document.createElement("div"); p.innerHTML="<span style=\"font-weight:700;font-size:.85em;color:var(--sub)\">英語</span>　"; p.appendChild(document.createTextNode(own.en.join("、"))); info.appendChild(p); }
+      if(own.parts.length){ const p=document.createElement("div"); p.innerHTML="<span style=\"font-weight:700;font-size:.85em;color:var(--sub)\">一字ずつの意味</span>"; for(const x of own.parts){ const l=document.createElement("div"); l.textContent=x; p.appendChild(l); } info.appendChild(p); }
+      const note=document.createElement("div"); note.style.fontSize=".85em"; note.style.color="var(--sub)"; note.textContent="※この言葉そのものの国語辞典の説明は入っていません。くわしくは「詳しく見る」で調べられます。"; info.appendChild(note);
+      d.append(info,charBtns(raw),moreLink(raw)); box.appendChild(d);
+    }
+    if(arr.length){ const t=document.createElement("p"); t.className="section-t"; t.textContent=`「${raw}」の言葉`; wordsWrap.appendChild(t); const box=document.createElement("div"); box.className="words"; wordsWrap.appendChild(box); for(const x of arr) box.appendChild(await wordCard(x.word,x.reading,x.meaning)); }
+    if(kots.length){ const t=document.createElement("p"); t.className="section-t"; t.textContent="ことわざ・四字熟語"; wordsWrap.appendChild(t); const box=document.createElement("div"); box.className="words"; wordsWrap.appendChild(box); for(const x of kots.slice(0,8)) box.appendChild(await wordCard(x.t,x.r||"",x.m||"")); }
   }catch(e){ rmeta.textContent="辞書検索でエラーが発生しました。"; }
   finally{ wordBtn.disabled=false; }
 };

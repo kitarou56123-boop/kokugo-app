@@ -334,7 +334,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-13（30）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（31）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1248,18 +1248,26 @@ function pickWiktMeaning(txt,word){
   }
   return "";
 }
+// 辞書や百科事典の文に書かれている読み（例：「伊右衛門（いえもん）は…」）を覚えておく
+const readCache=new Map();
+function grabReading(word,text){
+  if(!text||readCache.has(word)) return;
+  const esc=word.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  const m=String(text).match(new RegExp(esc+"\\s*[（(]\\s*([ぁ-ゖー・ 　]{2,30}?)\\s*[、，,）)／/]"));
+  if(m){ const r=m[1].replace(/[・ 　]/g,""); if(r.length>=2) readCache.set(word,r); }
+}
 async function lookupMeaning(word){
   if(meanCache.has(word)) return meanCache.get(word);
   let m="";
   try{
     const j=await fetchJSON("https://ja.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles="+encodeURIComponent(word));
     const pg=Object.values(j.query&&j.query.pages||{})[0];
-    if(pg && !("missing" in pg)) m=pickWiktMeaning(pg.extract||"",word);
+    if(pg && !("missing" in pg)){ grabReading(word,pg.extract||""); m=pickWiktMeaning(pg.extract||"",word); }
   }catch(e){}
   if(!m){
     try{
       const j=await fetchJSON("https://ja.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(word));
-      if(j && j.type!=="disambiguation" && j.extract){ m=j.extract.split("。")[0]; if(m) m+="。"; m=m.slice(0,140); }
+      if(j && j.type!=="disambiguation" && j.extract){ grabReading(word,j.extract); m=j.extract.split("。")[0]; if(m) m+="。"; m=m.slice(0,140); }
     }catch(e){}
   }
   meanCache.set(word,m);
@@ -1403,8 +1411,9 @@ async function showWordResult(text,info){
     }
     lines=lineToks.map(tt=>tt.map(x=>x.surface_form).join("")); all=lines.join("");
   }
+  const furiPs=[];
   lines.forEach((line,li)=>{
-    const p=document.createElement("p"); p.className="furi";
+    const p=document.createElement("p"); p.className="furi"; furiPs[li]=p;
     if(tk){ for(const x of lineToks[li]){ toks.push(x); p.appendChild(x.reading?rubyFor(x.surface_form,x.reading):document.createTextNode(x.surface_form)); } }
     else p.textContent=line;
     camRes.appendChild(p);
@@ -1430,7 +1439,19 @@ async function showWordResult(text,info){
   let shown=0;
   for(const c of cands.slice(0,8)){
     const m=await lookupMeaning(c.w);
+    if(myGen!==camGen) return;
     if(!m && !c.must) continue;            // 組み合わせた言葉は、意味が見つかった時だけ表示
+    // 辞書・百科事典に読みが書いてあれば、そちらを正しい読みとして使う（例：伊右衛門→いえもん）
+    const rr=readCache.get(c.w);
+    if(rr && rr!==c.r && !dictReading(c.w)){
+      c.r=rr;
+      if(tk) lineToks.forEach((tt,li)=>{
+        for(let a=0;a<tt.length;a++){ let acc=""; for(let b=a;b<tt.length;b++){ acc+=tt[b].surface_form; if(acc===c.w){
+          tt.splice(a,b-a+1,{surface_form:c.w,reading:toKata(rr),pos:"名詞",pos_detail_1:"固有名詞",basic_form:c.w,word_type:"KNOWN"});
+          const p=furiPs[li]; if(p){ p.textContent=""; for(const x of tt) p.appendChild(x.reading?rubyFor(x.surface_form,x.reading):document.createTextNode(x.surface_form)); }
+          return; } if(acc.length>=c.w.length) break; } }
+      });
+    }
     box.appendChild(await wordCard(c.w,c.r||"",m||"（意味は見つかりませんでした。「詳しく見る」で調べられます）"));
     shown++;
   }

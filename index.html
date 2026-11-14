@@ -334,7 +334,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（31）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（33）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1187,11 +1187,58 @@ const paths=["https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/","https://unpkg.
 function build(i){ kuromoji.builder({dicPath:paths[i]}).build((e,t)=>{ if(e){ if(i+1<paths.length) build(i+1); else postMessage({type:"err",msg:String(e)}); return; } tk=t; postMessage({type:"ready"}); }); }
 try{ importScripts("https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"); build(0); }
 catch(e){ try{ importScripts("https://unpkg.com/kuromoji@0.1.2/build/kuromoji.js"); build(1); }catch(e2){ postMessage({type:"err",msg:String(e2)}); } }
+let KCH=null;
 onmessage=(ev)=>{ const d=ev.data; let out;
+  if(d.op==="chars"){ KCH=d.chars; return; }
+  if(d.op==="near"){
+    const res=[]; const cs=[...d.text];
+    try{ for(let i=0;i<cs.length;i++){ if(!/[\u3400-\u9fff]/.test(cs[i])) continue;
+      for(const c of (KCH||[])){ if(c===cs[i]) continue; const t=cs.slice(); t[i]=c; const w=t.join("");
+        const tt=tk.tokenize(w); if(tt.length!==1||tt[0].word_type!=="KNOWN"||tt[0].surface_form!==w) continue;
+        const cost=tk.token_info_dictionary.dictionary.getShort(tt[0].word_id+4);
+        res.push({w,cost,pos:tt[0].pos,i,c,o:cs[i]}); } } }catch(e){}
+    res.sort((a,b)=>a.cost-b.cost);
+    postMessage({type:"res",id:d.id,out:res.filter(x=>x.pos==="名詞"||x.pos==="動詞"||x.pos==="形容詞").slice(0,120)}); return;
+  }
   try{ out=d.texts.map(s=>tk.tokenize(s).map(x=>({surface_form:x.surface_form,reading:x.reading,pos:x.pos,pos_detail_1:x.pos_detail_1,basic_form:x.basic_form,word_type:x.word_type}))); }
   catch(e){ out=d.texts.map(()=>[]); }
   postMessage({type:"res",id:d.id,out}); };
 `;
+// 常用・人名用など、よく使う漢字の一覧（1字ちがいの候補探しに使う）
+let KLIST=null;
+function KANJI_LIST(){ if(!KLIST){ KLIST=[]; for(const line of RAW.split("\n")){ const f=line.split("\t"); if(f[0]&&(+f[2]>0&&+f[2]<=10)) KLIST.push(f[0]); } } return KLIST; }
+// 読み取りで1字だけ取り違えた2字熟語を直す（例：時燥→乾燥）。ほかの候補も返す
+async function fixNear(line,tk,sc){
+  const alts=[], keep=[]; let cur=line;
+  try{ await loadMed(); }catch(e){}
+  const tt=await tk.tok(cur); let pos=0;
+  for(let i=0;i+1<tt.length;i++){
+    const a=tt[i],b=tt[i+1], p0=pos; pos+=[...a.surface_form].length;
+    if([...a.surface_form].length!==1||[...b.surface_form].length!==1) continue;
+    if(!/[\u3400-\u9fff]/.test(a.surface_form)||!/[\u3400-\u9fff]/.test(b.surface_form)) continue;
+    const pair=a.surface_form+b.surface_form;
+    if(dictReading(pair)) continue;
+    let c=await tk.near(pair); if(!c.length) continue;
+    // 読み取りの自信度が分かる時は、自信の低いほうの字だけを直す
+    const s0=sc&&sc[p0], s1=sc&&sc[p0+1]; let auto=false;
+    if(s0&&s1){
+      const bad=s0.c<=s1.c?0:1, sb=bad?s1:s0;
+      const choice=c.filter(x=>x.i===bad&&sb.ch.includes(x.c));
+      c=[...choice,...c.filter(x=>x.i===bad&&!choice.includes(x))];
+      auto=c.length>0&&(choice.length>0||sb.c<80);
+    }
+    if(!c.length) continue;
+    if(auto){ const nw=c[0].w; cur=cur.replace(pair,nw); for(const x of c.slice(1,4)) alts.push(cur.replace(nw,x.w)); alts.push(line); }
+    else{ // 自信度が分からない時は勝手に直さず、候補を見せて選んでもらう（それぞれの字を変えた候補を交互に）
+      const c0=c.filter(x=>x.i===0), c1=c.filter(x=>x.i===1); const mix=[];
+      for(let k=0;mix.length<6&&(k<c0.length||k<c1.length);k++){ if(c0[k]) mix.push(c0[k]); if(c1[k]&&mix.length<6) mix.push(c1[k]); }
+      for(const x of mix) alts.push(cur.replace(pair,x.w));
+      keep.push(pair);
+    }
+    i++; pos+=[...b.surface_form].length;
+  }
+  return {t:cur,alts:[...new Set(alts)].filter(x=>x!==cur),keep};
+}
 function loadKuromoji(){
   if(!kuroP) kuroP=new Promise((resolve,reject)=>{
     let w;
@@ -1205,7 +1252,9 @@ function loadKuromoji(){
         resolve({
           // 何回も同じ言葉を調べるので、結果を覚えておく
           async toks(texts){ const need=[...new Set(texts.filter(t=>!cache.has(t)))]; if(need.length){ const out=await ask(need); need.forEach((t,i)=>{ if(cache.size>3000) cache.clear(); cache.set(t,out[i]); }); } return texts.map(t=>cache.get(t)||[]); },
-          async tok(text){ return (await this.toks([text]))[0]; }
+          async tok(text){ return (await this.toks([text]))[0]; },
+          // 1字だけ違う、辞書にある言葉（よく使う順）
+          near(text){ if(!this._ch){ this._ch=true; w.postMessage({op:"chars",chars:KANJI_LIST()}); } return new Promise((res,rej)=>{ const id=++seq; pend.set(id,{res,rej}); w.postMessage({id,op:"near",text}); }); }
         });
       } else if(d.type==="err") fail(d.msg);
       else if(d.type==="res"){ const p=pend.get(d.id); if(p){ pend.delete(d.id); p.res(d.out); } }
@@ -1380,7 +1429,7 @@ async function fixReadings(toks){
 async function showWordResult(text,info){
   camRes.innerHTML=""; wordInfo.innerHTML="";
   let items=(info&&info.length?info:String(text||"").split(/\r?\n/).map(t=>({t,c:null})))
-    .map(x=>({t:String(x.t||"").trim(),c:x.c})).filter(x=>x.t);
+    .map(x=>({t:String(x.t||"").trim(),c:x.c,sc:x.sc||null})).filter(x=>x.t);
   if(items.length>1 && items.every(x=>[...x.t].length<=2)) items=[{t:items.map(x=>x.t).join(""),c:null}];
   let lines=items.map(x=>x.t);
   let all=lines.join("");
@@ -1394,6 +1443,8 @@ async function showWordResult(text,info){
   // 読み違いの直しと、切れ端の行の取り除き（全部消えてしまう時は元のまま）
   if(tk) for(const x of items){ x.t=await fixLookalike(x.t,tk); if(myGen!==camGen) return; }
   if(tk) for(const x of items) x.t=await fuzzyFix(x.t,tk);
+  let nearAlts=[], nearKeep=[], nearUI=[];
+  if(tk) for(const x of items){ if([...x.t].length>12) continue; const r=await fixNear(x.t,tk,x.sc&&x.sc.length===[...x.t].length?x.sc:null); x.t=r.t; nearAlts.push(...r.alts); nearKeep.push(...r.keep); if(myGen!==camGen) return; }
   const junkFlags=[]; for(const x of items) junkFlags.push(tk?await isJunkLine(x.t,tk):false);
   const good=items.filter((x,i)=>!(x.c!=null&&x.c<45)&&!junkFlags[i]);
   if(good.length) items=good;
@@ -1418,6 +1469,12 @@ async function showWordResult(text,info){
     else p.textContent=line;
     camRes.appendChild(p);
   });
+  if(nearAlts.length){
+    const q=document.createElement("p"); q.className="meta"; q.textContent=nearAlts.length&&!items.some(x=>x.sc)?"読み取りがあやしい字があります。もしかして（押すと調べ直します）：":"違う時は、正しいほうを押してください：";
+    const row=document.createElement("div"); row.style.cssText="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px";
+    for(const a of nearAlts){ const b=document.createElement("button"); b.type="button"; b.className="btn"; b.style.flex="0 0 auto"; b.style.padding="6px 14px"; b.textContent=a; b.onclick=()=>showWordResult(a); row.appendChild(b); }
+    camRes.appendChild(q); camRes.appendChild(row); nearUI=[q,row];
+  }
   if(!tk){ cstat.textContent="読みがなの辞書を読み込めませんでした。通信を確認してください。漢字は下のボタンから1字ずつ調べられます。"; }
   // 2) 意味を調べる言葉を選ぶ（全体 → つながった名詞 → 1語ずつ）
   const cands=[], seen=new Set();
@@ -1440,6 +1497,8 @@ async function showWordResult(text,info){
   for(const c of cands.slice(0,8)){
     const m=await lookupMeaning(c.w);
     if(myGen!==camGen) return;
+    // 「あやしい」と思った字を含む言葉の意味が見つかった時は、正しい言葉なので候補の表示を消す（例：伊右衛門）
+    if(m && nearUI.length && nearKeep.some(pp=>c.w.includes(pp))){ nearUI.forEach(e=>e.remove()); nearUI=[]; }
     if(!m && !c.must) continue;            // 組み合わせた言葉は、意味が見つかった時だけ表示
     // 辞書・百科事典に読みが書いてあれば、そちらを正しい読みとして使う（例：伊右衛門→いえもん）
     const rr=readCache.get(c.w);
@@ -1532,7 +1591,10 @@ async function ocrTry(img,lang,psm){
   await w.setParameters({tessedit_pageseg_mode:String(psm),preserve_interword_spaces:"1"});
   const r=await w.recognize(img);
   const text=cleanOcr(r.data.text);
-  const lines=(r.data.lines||[]).map(l=>({t:cleanOcr(l.text),c:l.confidence})).filter(l=>l.t);
+  // 1字ごとの自信度と、ほかの候補の字も覚えておく（取り違えた字を見つけるため）
+  const lines=(r.data.lines||[]).map(l=>{ const t=cleanOcr(l.text);
+    const sy=[]; for(const w of (l.words||[])) for(const y of (w.symbols||[])) sy.push({t:y.text,c:y.confidence,ch:(y.choices||[]).map(z=>z.text)});
+    return {t,c:l.confidence,sc:sy.map(y=>y.t).join("")===t?sy:null}; }).filter(l=>l.t);
   // 日本語が多く、自信度が高いものを良い結果とする
   const score=(r.data.confidence||0)+Math.min(jpCount(text),20);
   return {text,lines:lines.length?lines:null,score,conf:r.data.confidence||0,lang,psm};

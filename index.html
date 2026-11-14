@@ -341,7 +341,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（42）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（43）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -351,7 +351,7 @@ if (window.ort) {
   <div class="big" id="sk"></div>
   <dl id="sinfo"></dl>
   <div id="sfish"></div>
-  <div class="row"><button class="btn" id="zoomBtn">大きく見る</button><button class="btn primary" id="meanBtn">この字を使う言葉</button></div>
+  <div class="row"><button class="btn" id="zoomBtn">大きく見る</button><button class="btn primary" id="meanBtn" style="display:none">この字を使う言葉</button></div>
   <div class="ai" id="sai" hidden></div>
 </div>
 
@@ -1817,7 +1817,13 @@ function openSheet(k){
     const d2=document.createElement("dl"); sf.appendChild(d2); fishRows(d2,f,false);
     if(f.w){ const w=document.createElement("div"); w.className="fwarn"; w.textContent="⚠ "+f.w; sf.appendChild(w); }
   }
-  sai.hidden=true; sai.textContent=""; meanBtn.disabled=false;
+  sai.hidden=true; sai.textContent="";
+  try{ const keys=[k, ...(VAR_OLD2NEW.get(k)||[])], list=[];
+    for(const x of (Array.isArray(KOT)?KOT:[])){ const w=x&&(x.t||x.w); if(w&&keys.some(c=>w.includes(c))) list.push(x); }
+    if(list.length){ sai.hidden=false;
+      const t=document.createElement("p"); t.style.fontWeight="700"; t.style.margin="0 0 6px"; t.textContent="この字を使うことわざ・四字熟語"; sai.appendChild(t);
+      for(const x of list.slice(0,8)){ const p=document.createElement("p"); p.style.margin="0 0 8px"; const b=document.createElement("b"); b.textContent=x.t||x.w; p.appendChild(b); p.appendChild(document.createTextNode(`（${x.r||""}）`)); if(x.m){ const sm=document.createElement("span"); sm.style.display="block"; sm.style.color="var(--sub)"; sm.textContent=x.m; p.appendChild(sm); } sai.appendChild(p); } }
+  }catch(e){ sai.hidden=true; }
   sheet.classList.add("open"); sbg.classList.add("open"); document.getElementById("sclose").focus();
 }
 const zoom=document.getElementById("zoom"), zguide=document.getElementById("zguide"), zline=document.getElementById("zline");
@@ -1830,20 +1836,7 @@ zline.onclick=()=>{ const h=zguide.style.display==="none"; zguide.style.display=
 function closeSheet(){ sheet.classList.remove("open"); document.getElementById("ksheet").classList.remove("open"); document.getElementById("fsheet").classList.remove("open"); sbg.classList.remove("open"); }
 sbg.onclick=closeSheet; document.getElementById("sclose").onclick=closeSheet;
 document.addEventListener("keydown",e=>{ if(e.key!=="Escape") return; if(zoom.classList.contains("open")) closeZoom(); else closeSheet(); });
-meanBtn.onclick=()=>{
-  sai.hidden=false; sai.innerHTML="";
-  const k=curK; if(!k) return;
-  const keys=[k, ...(VAR_OLD2NEW.get(k)||[])];
-  const found=[], seen=new Set();
-  const scan=(src,label)=>{ if(typeof src!=="string") return; for(const row of src.split("\n")){ const [w,r,m]=row.split("|"); if(!w||seen.has(w)) continue; if(keys.some(c=>w.includes(c))){ seen.add(w); found.push({w,r:r||"",m:(m||"").trim(),label}); if(found.length>=15) return; } } };
-  try{ scan(typeof KOT!=="undefined"?KOT:null,"ことわざ"); }catch(e){}
-  try{ scan(typeof MEDW!=="undefined"?MEDW:null,"医学"); }catch(e){}
-  if(!found.length){ sai.textContent="この字を使う言葉は、アプリの中の辞書（ことわざ・医学用語）には見つかりませんでした。上の「意味」をご覧ください。"; return; }
-  const t=document.createElement("p"); t.style.fontWeight="700"; t.style.margin="0 0 6px"; t.textContent=`「${k}」を使う言葉`; sai.appendChild(t);
-  for(const x of found){ const p=document.createElement("p"); p.style.margin="0 0 8px";
-    const b=document.createElement("b"); b.textContent=x.w; p.appendChild(b);
-    p.appendChild(document.createTextNode(`（${x.r}）［${x.label}］ ${x.m}`)); sai.appendChild(p); }
-};
+meanBtn.onclick=()=>{};
 
 /* ことわざ */
 const KOT=`青菜に塩|あおなにしお|元気をなくしてしょんぼりするようす。

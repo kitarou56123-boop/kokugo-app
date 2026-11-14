@@ -6,7 +6,7 @@
 <title>ガリ勉</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700;900&family=Yuji+Syuku&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700;900&family=Yuji+Syuku&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --bg:#eef1ef; --surface:#ffffff; --ink:#1f2a33; --sub:#5b6873; --line:#d3dad6;
@@ -213,12 +213,15 @@ body.fishbg #fmeta{background:#fff;color:#1a1a1a!important;padding:6px 10px;bord
 :root[data-theme="dark"] .fwarn{background:#4a1f1b;color:#ffd2cc}
 .fmemo{margin-top:10px;padding:10px 12px;background:var(--soft);border-radius:10px;font-size:.95rem}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 <script>
-if (window.ort) {
-  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";
-  ort.env.wasm.numThreads = 1;
+/* 手書き認識エンジンは、使う時に初めて読み込む（起動を速くするため） */
+let ortLoading=null;
+function loadOrt(){
+  if(window.ort) return Promise.resolve();
+  if(!ortLoading) ortLoading=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"; sc.onload=()=>{ ort.env.wasm.wasmPaths="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/"; ort.env.wasm.numThreads=1; res(); }; sc.onerror=()=>{ ortLoading=null; rej(new Error("手書き認識エンジンを読み込めません")); }; document.head.appendChild(sc); });
+  return ortLoading;
 }
+window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000));
 </script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f5d62">
@@ -254,7 +257,20 @@ if (window.ort) {
 #splash .rays{position:absolute;left:50%;top:42%;width:1600px;height:1600px;margin:-800px 0 0 -800px;opacity:0;animation:spRays .9s ease-out .78s forwards;pointer-events:none}
 #splash .rays path{fill:#1b2228}
 @keyframes spRays{0%{opacity:0;transform:scale(1.4)}15%{opacity:.85;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
-#splash .spwrap{opacity:1;transform:scale(1.28);animation:spBack .25s cubic-bezier(.55,0,.9,.4) .08s forwards,spBurst .45s cubic-bezier(.5,0,.75,0) .33s forwards,spSettle .35s cubic-bezier(.2,1.5,.4,1) .78s forwards,spShake .28s linear 1.13s;z-index:1}
+#splash .spwrap{opacity:1;transform:scale(1.28);animation:spMain 1.41s linear 0s forwards;will-change:transform;z-index:1}
+@keyframes spMain{
+0%{transform:scale(1.28)}
+5.7%{transform:scale(1.28);animation-timing-function:cubic-bezier(.55,0,.9,.4)}
+23.4%{transform:scale(.05);animation-timing-function:cubic-bezier(.5,0,.75,0)}
+55.3%{transform:scale(4.2);animation-timing-function:cubic-bezier(.2,.8,.4,1)}
+69.5%{transform:scale(.92);animation-timing-function:ease-out}
+80.1%{transform:scale(1)}
+83%{transform:translate(-7px,4px) rotate(-3deg)}
+85.8%{transform:translate(6px,-5px) rotate(2deg)}
+89.4%{transform:translate(-5px,-3px)}
+92.2%{transform:translate(4px,4px) rotate(-1deg)}
+95.7%{transform:translate(-2px,1px)}
+100%{transform:none}}
 @keyframes spBack{0%{transform:scale(1.28)}100%{transform:scale(.05)}}
 #splash .spwrap .spicon{opacity:1;transform:none;animation:none;box-shadow:0 6px 18px rgba(0,0,0,.35)}
 @keyframes spBurst{0%{transform:scale(.05)}100%{transform:scale(4.2)}}
@@ -367,7 +383,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（47）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（48）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -527,6 +543,7 @@ async function loadHandModel(){
   if(handLoading) return handLoading;
   handLoading=(async()=>{
     wmeta.textContent="手書き認識エンジンを読み込んでいます（初回のみ約15MB）…";
+    await loadOrt();
     const labelsResponse=await fetch(HAND_BASE+"labels.json");
     if(!labelsResponse.ok) throw new Error("文字一覧を読み込めません");
     handLabels=await labelsResponse.json();

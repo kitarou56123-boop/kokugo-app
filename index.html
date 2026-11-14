@@ -338,7 +338,7 @@ if (window.ort) {
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（39）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-14（40）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1234,19 +1234,18 @@ async function fixNear(line,tk,sc){
     const pair=a.surface_form+b.surface_form;
     if(dictReading(pair)) continue;
     let c=await tk.near(pair); if(!c.length) continue;
-    // 読み取りの自信度が分かる時は、自信の低いほうの字だけを直す
-    const s0=sc&&sc[p0], s1=sc&&sc[p0+1]; let auto=false;
-    if(s0&&s1){
-      const bad=s0.c<=s1.c?0:1, sb=bad?s1:s0;
-      const choice=c.filter(x=>x.i===bad&&sb.ch.includes(x.c));
-      c=[...choice,...c.filter(x=>x.i===bad&&!choice.includes(x))];
-      auto=c.length>0&&(choice.length>0||sb.c<80);
+    // 読み取りの字の候補（Tesseractが2番目以下に考えた字）が辞書の言葉になる時だけ、自動で直す
+    const s0=sc&&sc[p0], s1=sc&&sc[p0+1]; let auto=null;
+    for(const [k,sx] of [[0,s0],[1,s1]].sort((u,v)=>((u[1]&&u[1].c)||0)-((v[1]&&v[1].c)||0))){
+      if(!sx) continue; const hit=c.find(x=>x.i===k&&sx.ch.includes(x.c)); if(hit){ auto=hit; break; }
     }
-    if(!c.length) continue;
-    if(auto){ const nw=c[0].w; cur=cur.replace(pair,nw); for(const x of c.slice(1,4)) alts.push(cur.replace(nw,x.w)); alts.push(line); }
-    else{ // 自信度が分からない時は勝手に直さず、候補を見せて選んでもらう（それぞれの字を変えた候補を交互に）
-      const c0=c.filter(x=>x.i===0), c1=c.filter(x=>x.i===1); const mix=[];
-      for(let k=0;mix.length<6&&(k<c0.length||k<c1.length);k++){ if(c0[k]) mix.push(c0[k]); if(c1[k]&&mix.length<6) mix.push(c1[k]); }
+    if(auto){ const nw=auto.w; cur=cur.replace(pair,nw); for(const x of [...c.filter(x=>x!==auto&&x.i===auto.i),...c.filter(x=>x.i!==auto.i)].slice(0,3)) alts.push(cur.replace(nw,x.w)); alts.push(line); }
+    else{ // 勝手に直さず「もしかして」で候補を見せる。
+      // 候補の少ない側を先に出す（例：時燥 →「〇燥」は乾燥・焦燥など数語だけ、「時〇」は時間・時代など山ほどある。
+      //  珍しい字「燥」のほうが正しく読めていて、「時」が読み違いの可能性が高い）
+      const c0=c.filter(x=>x.i===0), c1=c.filter(x=>x.i===1);
+      const [sa,sb2]=c0.length<=c1.length?[c0,c1]:[c1,c0];
+      const mix=sa.slice(0,5); for(const x of sb2){ if(mix.length>=7) break; mix.push(x); }
       for(const x of mix) alts.push(cur.replace(pair,x.w));
       keep.push(pair);
     }
@@ -1485,7 +1484,7 @@ async function showWordResult(text,info){
     camRes.appendChild(p);
   });
   if(nearAlts.length){
-    const q=document.createElement("p"); q.className="meta"; q.textContent=nearAlts.length&&!items.some(x=>x.sc)?"読み取りがあやしい字があります。もしかして（押すと調べ直します）：":"違う時は、正しいほうを押してください：";
+    const q=document.createElement("p"); q.className="meta"; q.textContent=nearKeep.length?"「"+nearKeep.join("・")+"」という言葉は辞書にありません。もしかして（押すと調べ直します）：":"自動で直しました。違う時は、正しいほうを押してください：";
     const row=document.createElement("div"); row.style.cssText="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px";
     for(const a of nearAlts){ const b=document.createElement("button"); b.type="button"; b.className="btn"; b.style.flex="0 0 auto"; b.style.padding="6px 14px"; b.textContent=a; b.onclick=()=>showWordResult(a); row.appendChild(b); }
     camRes.appendChild(q); camRes.appendChild(row); nearUI=[q,row];

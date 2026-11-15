@@ -410,7 +410,7 @@ window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000))
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-15（54）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-15（56）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -727,9 +727,16 @@ function rd(row){ const i=row.indexOf("\t"); const j=row.indexOf("\t",i+1); retu
 async function searchPlaces(){
   const s=bigK(toHira(q.value.trim()));
   placeWrap.innerHTML="";
-  if(s.length<3) return;   // 「なが」のように短い読みでは地名を出さない
+  const isKan=/\p{Script=Han}/u.test(s);   // 声で「ながさき」と言うと「長崎」と漢字で入るので、漢字の地名でも探す
+  if(isKan ? [...s].length<2 : s.length<3) return;   // 「なが」のように短い読みでは地名を出さない
   const P=await loadPlaces(); if(!P) return;
   if(bigK(toHira(q.value.trim()))!==s) return;
+  if(isKan){
+    const nm=s.replace(/[市町村区]$/,"");
+    const hits=P.map(r=>r.split("\t")).filter(h=>h.length>=3 && (h[0]===s || h[0]===nm)).slice(0,30);
+    if(hits.length) showPlaceHits(hits);
+    return;
+  }
   const find=(key)=>{ let lo=0,hi=P.length; while(lo<hi){ const m=(lo+hi)>>1; if(rd(P[m])<key) lo=m+1; else hi=m; } const h=[]; for(let i=lo;i<P.length && h.length<200;i++){ const r=P[i]; if(!rd(r).startsWith(key)) break; h.push(r.split("\t")); } return h; };
   let hits=find(s).filter(h=>bigK(h[1])===s);   // 読みがぴったり同じ地名だけ（「ながさき」→長崎。「ながさきや」などの続きは出さない）
   const stem=s.replace(/(まち|ちよう|むら|そん)$/,"");
@@ -738,6 +745,9 @@ async function searchPlaces(){
   const SUF={"":"","まち":"町","ちよう":"町","むら":"村","そん":"村","し":"市","く":"区"};
   const ex=h=>{ const r=bigK(h[1]).slice(stem.length); return (r in SUF) && (SUF[r]===""||h[0].endsWith(SUF[r])) ? 0 : 1; };
   hits.sort((a,b)=>ex(a)-ex(b) || a[1].length-b[1].length);
+  showPlaceHits(hits);
+}
+function showPlaceHits(hits){
   const t=document.createElement("p"); t.className="section-t"; t.textContent=`「${toHira(q.value.trim())}」という地名（${hits.length}件）`; placeWrap.appendChild(t);
   const box=document.createElement("div"); box.className="words";
   for(const [k,r,cs] of hits.slice(0,30)){

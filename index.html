@@ -421,7 +421,7 @@ window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000))
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-15（59）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-15（60）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -3084,5 +3084,15 @@ draw();
 })();
 </script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}</script>
+<style>
+/* v60：小さい文字を濃く・太く（波模様の上でも読みやすく） */
+:root:not([data-theme="dark"]){--sub:#2a3640}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sub:#c9d3d8}}
+:root[data-theme="dark"]{--sub:#c9d3d8}
+.meta,.kread,.kitem span,h1.logo .tag,.hint,.acct .small,.pwr small{font-weight:600}
+.meta{font-size:.9rem}
+/* 「日本語を読む」が選ばれている時に白い字が見えなくなっていたのを直す */
+body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
+</style>
 </body>
 </html>

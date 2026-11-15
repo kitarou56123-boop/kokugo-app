@@ -295,11 +295,11 @@ window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000))
 @keyframes spEyes{0%{opacity:0}8%{opacity:1}75%{opacity:1}100%{opacity:0}}
 #splash .spstar{z-index:2}
 @media (prefers-reduced-motion:reduce){#splash .speyes{display:none}}
-.qrow{display:flex;gap:8px;align-items:stretch}
-.qrow #q{flex:1;min-width:0;margin:0}
-.qrow #wordgo{flex:0 0 auto;width:auto;min-width:4.6em;padding:0 14px;margin:0;font-size:1.05rem}
+.qrow{display:flex;gap:6px;align-items:stretch}
+.qrow #q{flex:1;min-width:0;margin:0;padding-left:10px;padding-right:8px}
+.qrow #wordgo{flex:0 0 auto;width:auto;min-width:0;padding:0 10px;margin:0;font-size:1rem}
 #q::-webkit-search-cancel-button{display:none}
-.qrow #micBtn{flex:0 0 auto;width:52px;padding:0;margin:0;display:flex;align-items:center;justify-content:center}
+.qrow #micBtn{flex:0 0 auto;width:44px;padding:0;margin:0;display:flex;align-items:center;justify-content:center}
 .qrow #micBtn[hidden]{display:none}
 .qrow #micBtn.on{background:#c62828;color:#fff;border-color:#c62828;animation:micPulse 1s ease-in-out infinite}
 @keyframes micPulse{50%{transform:scale(1.08)}}
@@ -354,7 +354,7 @@ window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000))
   </section>
 
   <section id="p-read" hidden>
-    <div class="qrow"><input type="search" id="q" placeholder="ひらがな・漢字を入力" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="kana" enterkeyhint="search"><button class="btn" id="micBtn" type="button" aria-label="声で入力" hidden><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" fill="currentColor"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn primary" id="wordgo" aria-label="熟語・言葉で探す">探す</button></div><div id="voiceAlt" class="voicealt" hidden></div>
+    <div class="qrow"><input type="search" id="q" placeholder="読み・漢字" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="kana" enterkeyhint="search"><button class="btn" id="micBtn" type="button" aria-label="声で入力" hidden><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" fill="currentColor"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn primary" id="wordgo" aria-label="熟語・言葉で探す">探す</button></div><div id="voiceAlt" class="voicealt" hidden></div>
     <div class="meta" id="rmeta">1文字の漢字と地名は、入力するとすぐ下に出ます。熟語や言葉は「探す」かキーボードの決定（→）で探します。難しい漢字は、コピーしてここに貼り付けても調べられます。</div>
     <div id="medWrap"></div>
     <div id="wordsWrap"></div>
@@ -410,7 +410,7 @@ window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000))
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-15（53）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-15（54）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 

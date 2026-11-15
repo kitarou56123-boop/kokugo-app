@@ -17,8 +17,9 @@ self.addEventListener("fetch", e => {
     }))));
     return;
   }
+  // アプリ本体は毎回「新しい版が出ていないか」をGitHubに確かめる（ブラウザの一時保存に古い版が残っていても使わない）
   e.respondWith(
-    fetch(e.request).then(res => {
+    fetch(e.request, { cache: "no-cache" }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return res;
     }).catch(() => caches.match(e.request).then(r => r || Response.error()))

@@ -355,11 +355,11 @@ window.addEventListener("load",()=>setTimeout(()=>loadOrt().catch(()=>{}),4000))
 
   <section id="p-read" hidden>
     <div class="qrow"><input type="search" id="q" placeholder="読み・漢字" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="kana" enterkeyhint="search"><button class="btn" id="micBtn" type="button" aria-label="声で入力" hidden><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" fill="currentColor"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn primary" id="wordgo" aria-label="熟語・言葉で探す">探す</button></div><div id="voiceAlt" class="voicealt" hidden></div>
-    <div class="meta" id="rmeta">1文字の漢字と地名は、入力するとすぐ下に出ます。熟語や言葉は「探す」かキーボードの決定（→）で探します。難しい漢字は、コピーしてここに貼り付けても調べられます。</div>
+    <div class="meta" id="rmeta">1文字の漢字は、入力するとすぐ下に出ます。地名は、読みがはっきり地名と分かるとき（例：ながさき）だけ、その下に出ます。熟語や言葉は「探す」かキーボードの決定（→）で探します。難しい漢字は、コピーしてここに貼り付けても調べられます。</div>
     <div id="medWrap"></div>
     <div id="wordsWrap"></div>
-    <div id="placeWrap"></div>
     <div id="singleWrap"></div>
+    <div id="placeWrap"></div>
   </section>
 
   <section id="p-cam" hidden>
@@ -727,18 +727,18 @@ function rd(row){ const i=row.indexOf("\t"); const j=row.indexOf("\t",i+1); retu
 async function searchPlaces(){
   const s=bigK(toHira(q.value.trim()));
   placeWrap.innerHTML="";
-  if(s.length<2) return;
+  if(s.length<3) return;   // 「なが」のように短い読みでは地名を出さない
   const P=await loadPlaces(); if(!P) return;
   if(bigK(toHira(q.value.trim()))!==s) return;
   const find=(key)=>{ let lo=0,hi=P.length; while(lo<hi){ const m=(lo+hi)>>1; if(rd(P[m])<key) lo=m+1; else hi=m; } const h=[]; for(let i=lo;i<P.length && h.length<200;i++){ const r=P[i]; if(!rd(r).startsWith(key)) break; h.push(r.split("\t")); } return h; };
-  let hits=find(s);
+  let hits=find(s).filter(h=>bigK(h[1])===s);   // 読みがぴったり同じ地名だけ（「ながさき」→長崎。「ながさきや」などの続きは出さない）
   const stem=s.replace(/(まち|ちよう|むら|そん)$/,"");
   if(stem!==s && stem.length>=2){ const seen=new Set(hits.map(h=>h[0]+h[1])); for(const h of find(stem)){ if(/[町村]$/.test(h[0]) && !seen.has(h[0]+h[1]) && ["まち","ちよう","むら","そん"].includes(bigK(h[1]).slice(stem.length))) hits.push(h); } }
   if(!hits.length) return;
   const SUF={"":"","まち":"町","ちよう":"町","むら":"村","そん":"村","し":"市","く":"区"};
   const ex=h=>{ const r=bigK(h[1]).slice(stem.length); return (r in SUF) && (SUF[r]===""||h[0].endsWith(SUF[r])) ? 0 : 1; };
   hits.sort((a,b)=>ex(a)-ex(b) || a[1].length-b[1].length);
-  const t=document.createElement("p"); t.className="section-t"; t.textContent=`「${toHira(q.value.trim())}」で始まる地名（${hits.length>=200?"200件以上":hits.length+"件"}）`; placeWrap.appendChild(t);
+  const t=document.createElement("p"); t.className="section-t"; t.textContent=`「${toHira(q.value.trim())}」という地名（${hits.length}件）`; placeWrap.appendChild(t);
   const box=document.createElement("div"); box.className="words";
   for(const [k,r,cs] of hits.slice(0,30)){
     const d=document.createElement("div"); d.className="word";

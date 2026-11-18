@@ -737,24 +737,20 @@ async function recognize(){
     const normal=probs.map((p,i)=>({p,char:handLabels[i]?.char}))
       .filter(x=>x.char && [...x.char].length===1)
       .sort((a,b)=>b.p-a.p)
-      .slice(0,8);
+      .slice(0,4);
     let olds=[];
     try{
       const topP=normal.length?normal[0].p:0, thr=Math.max(0.08,0.5*topP);
       olds=matchOldForms(probs).filter(x=>x.p>=thr).slice(0,2);
     }catch(e){ olds=[]; }
-    let top=normal.concat(olds).sort((a,b)=>b.p-a.p).slice(0,8);
+    let top=normal.concat(olds).sort((a,b)=>b.p-a.p).slice(0,4);
     if(olds.length && !top.some(x=>x.old)) top[top.length-1]=olds[0];
-    /* エンジンが自信のないときは、形の近い字の1番目を上の段にも入れる */
+    /* 形の近い字：1番目とよく似た点数のものだけ、最大4つ（似ていない字は出さない） */
     let shapes=[];
-    try{ shapes=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length).slice(0,9); }catch(e){ shapes=[]; }
-    const conf=normal.length?normal[0].p:0;
-    if(shapes.length && conf<0.6){
-      const sx=Object.assign({},shapes.shift(),{rare:true});
-      if(conf<0.3) top.splice(1,0,sx); else if(top.length<8) top.push(sx); else top[7]=sx;
-      top=top.slice(0,8);
-    }
-    shapes=shapes.slice(0,8);
+    try{
+      const sh=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length);
+      if(sh.length && sh[0].p>=0.05) shapes=sh.filter(x=>x.p>=sh[0].p*0.75).slice(0,4);
+    }catch(e){ shapes=[]; }
     wres.innerHTML="";
     if(!top.length){
       wmeta.textContent="候補が見つかりません。枠の中央に大きく書いてください。";

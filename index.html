@@ -450,7 +450,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（68）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（69）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -631,6 +631,10 @@ async function makeHandTensor(){
   rc.fillStyle="#fff"; rc.fillRect(0,0,256,256);
   const img=await exportImg(), bitmap=await createImageBitmap(img);
   rc.drawImage(bitmap,0,0,256,256); bitmap.close();
+  return tensorFromCanvas(raw);
+}
+function tensorFromCanvas(raw){
+  const S=128, rc=raw.getContext("2d",{willReadFrequently:true});
   const pixels=rc.getImageData(0,0,256,256).data;
   let minX=256,minY=256,maxX=-1,maxY=-1;
   for(let y=0;y<256;y++) for(let x=0;x<256;x++){
@@ -725,6 +729,56 @@ function matchShapes(probs,exclude,nStrokes){
   return out.sort((a,b)=>b.p-a.p);
 }
 
+/* 手書きエンジンは同時に1つしか動かせないので、順番待ちにする */
+let runChain=Promise.resolve();
+function runModel(t){ const p=runChain.then(()=>handSession.run({input:t})); runChain=p.catch(()=>{}); return p; }
+
+/* 活字の字をエンジンに見せたときの反応（字ごとに1回だけ計算して覚えておく） */
+const glyphCache=new Map();
+const GLYPH_FONT='"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic","Meiryo",sans-serif';
+async function glyphSig(ch){
+  if(glyphCache.has(ch)) return glyphCache.get(ch);
+  const raw=document.createElement("canvas"); raw.width=256; raw.height=256;
+  const c=raw.getContext("2d",{willReadFrequently:true});
+  c.fillStyle="#fff"; c.fillRect(0,0,256,256); c.fillStyle="#000";
+  c.font="bold 200px "+GLYPH_FONT; c.textAlign="center"; c.textBaseline="middle";
+  c.fillText(ch,128,136);
+  let sig=null;
+  try{
+    const r=await runModel(tensorFromCanvas(raw));
+    const pr=handSoftmax(Array.from(r.logits.data));
+    const idx=pr.map((p,i)=>i).sort((a,b)=>pr[b]-pr[a]).slice(0,60);
+    sig=idx.map(i=>[i,Math.sqrt(pr[i])]);
+  }catch(e){ sig=null; }
+  glyphCache.set(ch,sig);
+  return sig;
+}
+/* 手書きの反応と活字の反応がどれだけ同じか（0〜1、1なら全く同じ） */
+function sigMatch(hs,sig){ if(!sig) return 0; let s=0; for(const [i,v] of sig) s+=hs[i]*v; return s; }
+
+function showCands(top,shapes,olds){
+  wres.innerHTML="";
+  if(!top.length){
+    wmeta.textContent="候補が見つかりません。枠の中央に大きく書いてください。";
+    return;
+  }
+  const best=Math.max(top[0].p, olds.length?olds[0].p:0);
+  wmeta.textContent=(best<0.12 && !top[0].sure)
+    ? "文字をはっきり認識できません。書き直すか、下の候補を確認してください。"
+    : "似ている順に候補を表示しています。候補を押すと読み方や意味が見られます。";
+  top.forEach(x=>{ const b=candBtn(x.char); const small=document.createElement("small");
+    if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
+    else if(x.sure){ b.classList.add("shape"); b.title="エンジンにない珍しい字ですが、形がよく一致しました"; small.textContent="珍しい字"; }
+    else { b.title=`一致度 ${(x.p*100).toFixed(1)}%`; small.textContent=`${(x.p*100).toFixed(1)}%`; }
+    b.appendChild(small); wres.appendChild(b); });
+  if(shapes.length){
+    const t=document.createElement("p"); t.className="meta shape-t";
+    t.textContent="形の近い字（名前・施設名などの珍しい字）"; wres.appendChild(t);
+    shapes.forEach(x=>{ const b=candBtn(x.char); b.classList.add("shape"); b.title="形の近い字";
+      const small=document.createElement("small"); small.textContent="似た形"; b.appendChild(small); wres.appendChild(b); });
+  }
+}
+
 async function recognize(){
   const id=++recId;
   if(!strokes.length) return;
@@ -732,7 +786,7 @@ async function recognize(){
   try{
     await loadHandModel();
     if(id!==recId) return;
-    const result=await handSession.run({input:await makeHandTensor()});
+    const result=await runModel(await makeHandTensor());
     if(id!==recId) return;
     const probs=handSoftmax(Array.from(result.logits.data));
     const normal=probs.map((p,i)=>({p,char:handLabels[i]?.char}))
@@ -747,32 +801,36 @@ async function recognize(){
     let top=normal.concat(olds).sort((a,b)=>b.p-a.p).slice(0,4);
     if(olds.length && !top.some(x=>x.old)) top[top.length-1]=olds[0];
     /* 形の近い字：1番目とよく似た点数のものだけ、最大4つ（似ていない字は出さない） */
-    let shapes=[];
+    let pool=[], shapes=[];
     try{
       const sh=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length);
-      if(sh.length && sh[0].p>=0.05) shapes=sh.filter(x=>x.p>=sh[0].p*0.75).slice(0,4);
-    }catch(e){ shapes=[]; }
-    wres.innerHTML="";
-    if(!top.length){
-      wmeta.textContent="候補が見つかりません。枠の中央に大きく書いてください。";
-      return;
+      if(sh.length && sh[0].p>=0.05){ pool=sh.slice(0,8); shapes=sh.filter(x=>x.p>=sh[0].p*0.75).slice(0,4); }
+    }catch(e){ pool=[]; shapes=[]; }
+    showCands(top,shapes,olds);
+
+    /* 仕上げ：エンジンが自信のないときだけ、珍しい字を活字の反応と比べて確かめる。
+       エンジンの候補より手書きによく合えば「確定」として上の段のトップに出す */
+    const conf=normal.length?normal[0].p:0;
+    if(!pool.length || conf>=0.6) return;
+    const hs=probs.map(Math.sqrt);
+    let knownBest=0;
+    for(const x of normal.slice(0,3)){
+      const m=sigMatch(hs,await glyphSig(x.char)); if(id!==recId) return;
+      if(m>knownBest) knownBest=m;
     }
-    const best=Math.max(top[0].p, olds.length?olds[0].p:0);
-    wmeta.textContent=best<0.12
-      ? "文字をはっきり認識できません。書き直すか、下の候補を確認してください。"
-      : "似ている順に候補を表示しています。候補を押すと読み方や意味が見られます。";
-    top.forEach(x=>{ const b=candBtn(x.char); const small=document.createElement("small");
-      if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
-      else if(x.rare){ b.classList.add("shape"); b.title="形の近い珍しい字"; small.textContent="珍しい字"; }
-      else { b.title=`一致度 ${(x.p*100).toFixed(1)}%`; small.textContent=`${(x.p*100).toFixed(1)}%`; }
-      b.appendChild(small); wres.appendChild(b); });
-    /* エンジンが覚えていない字の候補（形が似ている順） */
-    if(shapes.length){
-      const t=document.createElement("p"); t.className="meta shape-t";
-      t.textContent="形の近い字（名前・施設名などの珍しい字）"; wres.appendChild(t);
-      shapes.forEach(x=>{ const b=candBtn(x.char); b.classList.add("shape"); b.title="形の近い字";
-        const small=document.createElement("small"); small.textContent="似た形"; b.appendChild(small); wres.appendChild(b); });
+    const scored=[];
+    for(const x of pool){
+      const m=sigMatch(hs,await glyphSig(x.char)); if(id!==recId) return;
+      scored.push({char:x.char,p:x.p,m});
     }
+    scored.sort((a,b)=>b.m-a.m);
+    const win=scored[0];
+    if(win && win.m>=0.3 && win.m>knownBest*1.05){
+      top=[{char:win.char,p:win.m,sure:true}].concat(top).slice(0,4);
+    }
+    const rest=scored.filter(x=>!(top.some(t=>t.char===x.char)) && x.m>=(scored[0].m*0.5));
+    shapes=rest.slice(0,4);
+    showCands(top,shapes,olds);
   }catch(e){
     if(id===recId) wmeta.textContent="認識エンジンの読み込みに失敗しました："+(e && e.message ? e.message : String(e))+"。ページを再読み込みして再試行してください。";
   }

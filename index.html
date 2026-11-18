@@ -3341,6 +3341,10 @@ const KRAD_SRC="㐂匕\n㐆ノ勹ヨ\n㐬亠厶川\n㐮一｜ノ二亠ハ衣\n�
 /* v77：「ガリ勉」の題字と説明を、アイコンの右側の真ん中に置く */
 h1.logo .name{flex:1;align-items:center;text-align:center}
 h1.logo .big{align-self:center}
+/* v78：右に寄りすぎていたので、画面の真ん中にそろえる（アイコンの幅＋すき間ぶん右側を空ける） */
+h1.logo .name{padding-right:112px}
+@media (max-width:600px){h1.logo .name{padding-right:76px}}
+@media (max-width:340px){h1.logo .name{padding-right:24px}}
 /* v75：スマホで書く枠と候補が1画面に収まるように詰める */
 @media (max-width:600px){
   h1.logo{gap:12px;margin:0 0 8px}

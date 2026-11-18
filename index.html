@@ -450,7 +450,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-19（76）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-19（77）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -3338,6 +3338,9 @@ const KRAD_SRC="㐂匕\n㐆ノ勹ヨ\n㐬亠厶川\n㐮一｜ノ二亠ハ衣\n�
 </script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}</script>
 <style>
+/* v77：「ガリ勉」の題字と説明を、アイコンの右側の真ん中に置く */
+h1.logo .name{flex:1;align-items:center;text-align:center}
+h1.logo .big{align-self:center}
 /* v75：スマホで書く枠と候補が1画面に収まるように詰める */
 @media (max-width:600px){
   h1.logo{gap:12px;margin:0 0 8px}

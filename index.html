@@ -745,6 +745,16 @@ async function recognize(){
     }catch(e){ olds=[]; }
     let top=normal.concat(olds).sort((a,b)=>b.p-a.p).slice(0,8);
     if(olds.length && !top.some(x=>x.old)) top[top.length-1]=olds[0];
+    /* エンジンが自信のないときは、形の近い字の1番目を上の段にも入れる */
+    let shapes=[];
+    try{ shapes=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length).slice(0,9); }catch(e){ shapes=[]; }
+    const conf=normal.length?normal[0].p:0;
+    if(shapes.length && conf<0.6){
+      const sx=Object.assign({},shapes.shift(),{rare:true});
+      if(conf<0.3) top.splice(1,0,sx); else if(top.length<8) top.push(sx); else top[7]=sx;
+      top=top.slice(0,8);
+    }
+    shapes=shapes.slice(0,8);
     wres.innerHTML="";
     if(!top.length){
       wmeta.textContent="候補が見つかりません。枠の中央に大きく書いてください。";
@@ -756,11 +766,10 @@ async function recognize(){
       : "似ている順に候補を表示しています。候補を押すと読み方や意味が見られます。";
     top.forEach(x=>{ const b=candBtn(x.char); const small=document.createElement("small");
       if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
+      else if(x.rare){ b.classList.add("shape"); b.title="形の近い珍しい字"; small.textContent="珍しい字"; }
       else { b.title=`一致度 ${(x.p*100).toFixed(1)}%`; small.textContent=`${(x.p*100).toFixed(1)}%`; }
       b.appendChild(small); wres.appendChild(b); });
     /* エンジンが覚えていない字の候補（形が似ている順） */
-    let shapes=[];
-    try{ shapes=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length).slice(0,8); }catch(e){ shapes=[]; }
     if(shapes.length){
       const t=document.createElement("p"); t.className="meta shape-t";
       t.textContent="形の近い字（名前・施設名などの珍しい字）"; wres.appendChild(t);

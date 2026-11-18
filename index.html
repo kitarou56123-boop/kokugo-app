@@ -450,7 +450,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（73）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（74）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -821,7 +821,7 @@ async function recognize(){
     let pool=[], shapes=[];
     try{
       const sh=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length);
-      if(sh.length && sh[0].p>=0.05){ pool=sh.slice(0,16); shapes=sh.filter(x=>x.p>=sh[0].p*0.75).slice(0,4); }
+      if(sh.length && sh[0].p>=0.05){ pool=sh.slice(0,6); shapes=sh.filter(x=>x.p>=sh[0].p*0.75).slice(0,4); }
     }catch(e){ pool=[]; shapes=[]; }
     /* 「吉」と読めたときは、下の横棒が長い「𠮷（つちよし）」かどうかを書いた線で見分ける */
     try{
@@ -837,9 +837,13 @@ async function recognize(){
        エンジンの候補より手書きによく合えば「確定」として上の段のトップに出す */
     const conf=normal.length?normal[0].p:0;
     if(!pool.length || conf>=0.6) return;
+    /* 書いている途中は動かさない：手を止めて1秒たってから確かめる */
+    const nStroke=strokes.length;
+    await new Promise(r=>setTimeout(r,1000));
+    if(id!==recId || strokes.length!==nStroke) return;
     const hs=probs.map(Math.sqrt);
     let knownBest=0;
-    for(const x of normal.slice(0,3).concat(olds)){
+    for(const x of normal.slice(0,2).concat(olds.slice(0,1))){
       const m=sigMatch(hs,await glyphSig(x.char)); if(id!==recId) return;
       if(m>knownBest) knownBest=m;
     }

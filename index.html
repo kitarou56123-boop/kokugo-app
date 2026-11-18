@@ -450,7 +450,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（72）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（73）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -731,7 +731,11 @@ function matchShapes(probs,exclude,nStrokes){
 
 /* 手書きエンジンは同時に1つしか動かせないので、順番待ちにする */
 let runChain=Promise.resolve();
-function runModel(t){ const p=runChain.then(()=>handSession.run({input:t})); runChain=p.catch(()=>{}); return p; }
+function runModel(t){
+  // 万一エンジンが止まっても、10秒で次の順番に進める（認識が固まらないように）
+  const p=runChain.then(()=>Promise.race([handSession.run({input:t}), new Promise((_,rej)=>setTimeout(()=>rej(new Error("認識に時間がかかりすぎました。もう一度書いてください")),10000))]));
+  runChain=p.catch(()=>{}); return p;
+}
 
 /* 活字の字をエンジンに見せたときの反応（字ごとに1回だけ計算して覚えておく） */
 const glyphCache=new Map();

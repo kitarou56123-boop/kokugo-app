@@ -701,7 +701,7 @@ function prepareShape(){
   shapeData={parts,pool};
   return shapeData;
 }
-function matchShapes(probs,exclude){
+function matchShapes(probs,exclude,nStrokes){
   const {parts,pool}=prepareShape();
   const top=probs.map((p,i)=>({p,ch:handLabels[i]&&handLabels[i].char}))
     .filter(x=>x.ch && parts.has(x.ch)).sort((a,b)=>b.p-a.p).slice(0,10)
@@ -717,7 +717,9 @@ function matchShapes(probs,exclude){
       if(c.st&&t.st) j*=Math.exp(-Math.abs(c.st-t.st)/3);
       s+=t.w*j;
     }
-    if(s>0.08) out.push({char:c.ch,p:s});
+    /* 実際に書いた画数に近い字を上にする（続けて書くと画数が減るので、多い側には甘く） */
+    if(nStrokes && c.st){ const d=c.st>=nStrokes?(c.st-nStrokes)*0.6:(nStrokes-c.st); s*=Math.exp(-d/2); }
+    if(s>0.02) out.push({char:c.ch,p:s});
   }
   return out.sort((a,b)=>b.p-a.p);
 }
@@ -758,7 +760,7 @@ async function recognize(){
       b.appendChild(small); wres.appendChild(b); });
     /* エンジンが覚えていない字の候補（形が似ている順） */
     let shapes=[];
-    try{ shapes=matchShapes(probs,new Set(top.map(x=>x.char))).slice(0,8); }catch(e){ shapes=[]; }
+    try{ shapes=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length).slice(0,8); }catch(e){ shapes=[]; }
     if(shapes.length){
       const t=document.createElement("p"); t.className="meta shape-t";
       t.textContent="形の近い字（名前・施設名などの珍しい字）"; wres.appendChild(t);

@@ -450,7 +450,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（71）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（72）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -526,8 +526,8 @@ for(const line of RAW.split("\n")){
 
 /* 旧字・異体字（名前によく使う字） */
 const VAR_NEW2OLD=new Map(), VAR_OLD2NEW=new Map();
-for(const e of "浜濱濵,高髙,崎﨑嵜碕,辺邊邉,斎齋,斉齊,沢澤,桜櫻,広廣,国國,恵惠,徳德,寿壽,実實,栄榮,真眞,島嶋嶌,淵渕,富冨,村邨,槙槇,桧檜,薮藪,荘莊,野埜,峰峯,桑桒,巻卷,黒黑,円圓,会會,学學,気氣,蔵藏,豊豐,礼禮,弥彌,与與,増增,浅淺,満滿,済濟,瀬瀨,県縣,鉄鐵,関關,宝寶寳,万萬,伝傳,絵繪,亀龜,鴎鷗,晋晉,館舘,稲稻,条條,拝拜,仏佛,来來,児兒,駅驛,聡聰,芦蘆,静靜,青靑,清淸,柳栁,杉杦,恒恆,将將,岳嶽,巌巖,楽樂,園薗,遥遙,凛凜,暁曉,禄祿,営營,誉譽,覚覺,芸藝,読讀,図圖,団團,台臺,対對,宜冝,竜龍,姫姬,応應,塩鹽,処處,釈釋,寛寬,縁緣,継繼,続續,郷鄕,齢齡,剣劍,険險,験驗,権權,歓歡,観觀,鶏鷄,鉱鑛,鋳鑄,総總,聴聽,蛍螢,当當,党黨,発發,拡擴,塁壘,曽曾,籠篭,峡峽,狭狹,挟挾,歯齒,献獻,声聲,粋粹,酔醉,砕碎,双雙,壮壯,装裝,属屬,带帶,滝瀧,単單,胆膽,弾彈,断斷,痴癡,昼晝,庁廳,鎮鎭,転轉,灯燈,闘鬭鬪,独獨,届屆,弐貳,悩惱,脳腦,覇霸,廃廢,売賣,麦麥,晩晚,蛮蠻,秘祕,瓶甁,払拂,並竝,変變,歩步,舗舖,翻飜,毎每,黙默,訳譯,薬藥,予豫,余餘,揺搖,様樣,謡謠,頼賴,乱亂,覧覽,両兩,猟獵,緑綠,涙淚,励勵,霊靈,恋戀,炉爐,労勞,楼樓,録錄,湾灣,亜亞,悪惡,圧壓,囲圍,医醫,為爲,壱壹,隠隱,衛衞,艶艷,欧歐,殴毆,奥奧,温溫,穏穩,仮假,価價,画畫,壊壞,懐懷,殻殼,勧勸,缶罐,陥陷,顔顏,帰歸,偽僞,戯戲,犠犧,旧舊,拠據,挙擧,区區,駆驅,勲勳,径徑,渓溪,経經,茎莖,軽輕,撃擊,欠缺,研硏,倹儉,圏圈,検檢,顕顯,厳嚴,効效,黄黃,号號,剤劑,雑雜,参參,桟棧,蚕蠶,惨慘,賛贊,残殘,糸絲,辞辭,湿濕,写寫,収收,従從,渋澁,獣獸,縦縱,粛肅,叙敍,奨奬,焼燒,称稱,証證,乗乘,剰剩,壌壤,嬢孃,浄淨,状狀,畳疊,譲讓,醸釀,嘱囑,触觸,寝寢,慎愼,尽盡,穂穗,随隨,髄髓,枢樞,数數,窃竊,摂攝,専專,戦戰,践踐,銭錢,潜潛,繊纖,禅禪,争爭,捜搜,挿插,巣巢,騒騷,臓臟,即卽,堕墮,体體,帯帶,滞滯,択擇,担擔,遅遲,虫蟲,逓遞,点點,盗盜,杯盃,髪髮,抜拔,弁辯瓣辨,没沒,暦曆,歴歷,郎郞".split(",")){ const a=[...e], n=a[0], olds=a.slice(1); VAR_NEW2OLD.set(n,olds); for(const o of olds){ if(!VAR_OLD2NEW.has(o)) VAR_OLD2NEW.set(o,[]); VAR_OLD2NEW.get(o).push(n); } }
-for(const [o,st] of [["髙",11],["姬",null],["淸",11],["靑",8]]){
+for(const e of "吉𠮷,浜濱濵,高髙,崎﨑嵜碕,辺邊邉,斎齋,斉齊,沢澤,桜櫻,広廣,国國,恵惠,徳德,寿壽,実實,栄榮,真眞,島嶋嶌,淵渕,富冨,村邨,槙槇,桧檜,薮藪,荘莊,野埜,峰峯,桑桒,巻卷,黒黑,円圓,会會,学學,気氣,蔵藏,豊豐,礼禮,弥彌,与與,増增,浅淺,満滿,済濟,瀬瀨,県縣,鉄鐵,関關,宝寶寳,万萬,伝傳,絵繪,亀龜,鴎鷗,晋晉,館舘,稲稻,条條,拝拜,仏佛,来來,児兒,駅驛,聡聰,芦蘆,静靜,青靑,清淸,柳栁,杉杦,恒恆,将將,岳嶽,巌巖,楽樂,園薗,遥遙,凛凜,暁曉,禄祿,営營,誉譽,覚覺,芸藝,読讀,図圖,団團,台臺,対對,宜冝,竜龍,姫姬,応應,塩鹽,処處,釈釋,寛寬,縁緣,継繼,続續,郷鄕,齢齡,剣劍,険險,験驗,権權,歓歡,観觀,鶏鷄,鉱鑛,鋳鑄,総總,聴聽,蛍螢,当當,党黨,発發,拡擴,塁壘,曽曾,籠篭,峡峽,狭狹,挟挾,歯齒,献獻,声聲,粋粹,酔醉,砕碎,双雙,壮壯,装裝,属屬,带帶,滝瀧,単單,胆膽,弾彈,断斷,痴癡,昼晝,庁廳,鎮鎭,転轉,灯燈,闘鬭鬪,独獨,届屆,弐貳,悩惱,脳腦,覇霸,廃廢,売賣,麦麥,晩晚,蛮蠻,秘祕,瓶甁,払拂,並竝,変變,歩步,舗舖,翻飜,毎每,黙默,訳譯,薬藥,予豫,余餘,揺搖,様樣,謡謠,頼賴,乱亂,覧覽,両兩,猟獵,緑綠,涙淚,励勵,霊靈,恋戀,炉爐,労勞,楼樓,録錄,湾灣,亜亞,悪惡,圧壓,囲圍,医醫,為爲,壱壹,隠隱,衛衞,艶艷,欧歐,殴毆,奥奧,温溫,穏穩,仮假,価價,画畫,壊壞,懐懷,殻殼,勧勸,缶罐,陥陷,顔顏,帰歸,偽僞,戯戲,犠犧,旧舊,拠據,挙擧,区區,駆驅,勲勳,径徑,渓溪,経經,茎莖,軽輕,撃擊,欠缺,研硏,倹儉,圏圈,検檢,顕顯,厳嚴,効效,黄黃,号號,剤劑,雑雜,参參,桟棧,蚕蠶,惨慘,賛贊,残殘,糸絲,辞辭,湿濕,写寫,収收,従從,渋澁,獣獸,縦縱,粛肅,叙敍,奨奬,焼燒,称稱,証證,乗乘,剰剩,壌壤,嬢孃,浄淨,状狀,畳疊,譲讓,醸釀,嘱囑,触觸,寝寢,慎愼,尽盡,穂穗,随隨,髄髓,枢樞,数數,窃竊,摂攝,専專,戦戰,践踐,銭錢,潜潛,繊纖,禅禪,争爭,捜搜,挿插,巣巢,騒騷,臓臟,即卽,堕墮,体體,帯帶,滞滯,択擇,担擔,遅遲,虫蟲,逓遞,点點,盗盜,杯盃,髪髮,抜拔,弁辯瓣辨,没沒,暦曆,歴歷,郎郞".split(",")){ const a=[...e], n=a[0], olds=a.slice(1); VAR_NEW2OLD.set(n,olds); for(const o of olds){ if(!VAR_OLD2NEW.has(o)) VAR_OLD2NEW.set(o,[]); VAR_OLD2NEW.get(o).push(n); } }
+for(const [o,st] of [["𠮷",6],["髙",11],["姬",null],["淸",11],["靑",8]]){
   if(DB.has(o)) continue;
   const n=(VAR_OLD2NEW.get(o)||[])[0], b=n&&DB.get(n);
   if(!b) continue;
@@ -765,7 +765,8 @@ function showCands(top,shapes,olds){
     ? "文字をはっきり認識できません。書き直すか、下の候補を確認してください。"
     : "似ている順に候補を表示しています。候補を押すと読み方や意味が見られます。";
   top.forEach(x=>{ const b=candBtn(x.char); const small=document.createElement("small");
-    if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
+    if(x.vari){ b.classList.add("old"); b.title="異体字（名前に使う字）"; small.textContent="異体字"; }
+    else if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
     else if(x.sure){ b.classList.add("shape"); b.title="エンジンにない珍しい字ですが、形がよく一致しました"; small.textContent="珍しい字"; }
     else { b.title=`一致度 ${(x.p*100).toFixed(1)}%`; small.textContent=`${(x.p*100).toFixed(1)}%`; }
     b.appendChild(small); wres.appendChild(b); });
@@ -775,6 +776,20 @@ function showCands(top,shapes,olds){
     shapes.forEach(x=>{ const b=candBtn(x.char); b.classList.add("shape"); b.title="形の近い字";
       const small=document.createElement("small"); small.textContent="似た形"; b.appendChild(small); wres.appendChild(b); });
   }
+}
+
+/* 書いた線のうち、横に長い線を上から2本取り、下の線のほうが長ければ「土」（𠮷） */
+function isTsuchiYoshi(){
+  const hz=[];
+  for(const s of strokes){
+    if(!s||s.length<2) continue;
+    let x0=1,x1=0,y0=1,y1=0; for(const [x,y] of s){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    const w=x1-x0, h=y1-y0;
+    if(w>0.08 && w>h*2.5) hz.push({w,y:(y0+y1)/2});
+  }
+  if(hz.length<2) return false;
+  hz.sort((a,b)=>a.y-b.y);
+  return hz[1].w>hz[0].w*1.15;
 }
 
 async function recognize(){
@@ -804,6 +819,14 @@ async function recognize(){
       const sh=matchShapes(probs,new Set(top.map(x=>x.char)),strokes.length);
       if(sh.length && sh[0].p>=0.05){ pool=sh.slice(0,16); shapes=sh.filter(x=>x.p>=sh[0].p*0.75).slice(0,4); }
     }catch(e){ pool=[]; shapes=[]; }
+    /* 「吉」と読めたときは、下の横棒が長い「𠮷（つちよし）」かどうかを書いた線で見分ける */
+    try{
+      if(top.some(x=>x.char==="吉") && !top.some(x=>x.char==="𠮷")){
+        const v={char:"𠮷",p:0,vari:true};
+        if(isTsuchiYoshi()) top=[v].concat(top.filter(x=>x.char!=="𠮷")).slice(0,4);
+        else shapes=[{char:"𠮷",p:0,vari:true}].concat(shapes).slice(0,4);
+      }
+    }catch(e){}
     showCands(top,shapes,olds);
 
     /* 仕上げ：エンジンが自信のないときだけ、珍しい字を活字の反応と比べて確かめる。

@@ -450,7 +450,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-18（74）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-19（75）</p>
   <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -767,7 +767,7 @@ function showCands(top,shapes,olds){
   const best=Math.max(top[0].p, olds.length?olds[0].p:0);
   wmeta.textContent=(best<0.12 && !top[0].sure)
     ? "文字をはっきり認識できません。書き直すか、下の候補を確認してください。"
-    : "似ている順に候補を表示しています。候補を押すと読み方や意味が見られます。";
+    : "候補を押すと読み方・意味が出ます。";
   top.forEach(x=>{ const b=candBtn(x.char); const small=document.createElement("small");
     if(x.vari){ b.classList.add("old"); b.title="異体字（名前に使う字）"; small.textContent="異体字"; }
     else if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
@@ -3338,6 +3338,24 @@ const KRAD_SRC="㐂匕\n㐆ノ勹ヨ\n㐬亠厶川\n㐮一｜ノ二亠ハ衣\n�
 </script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{});});}</script>
 <style>
+/* v75：スマホで書く枠と候補が1画面に収まるように詰める */
+@media (max-width:600px){
+  h1.logo{gap:12px;margin:0 0 8px}
+  h1.logo img{width:64px;height:64px;border-radius:15px}
+  h1.logo .name{gap:4px}
+  h1.logo .big{padding-bottom:8px}
+  h1.logo .txt{font-size:2.5rem}
+  h1.logo .fude{height:18px}
+  h1.logo .tag{font-size:.78rem}
+  .tabs{margin-bottom:6px}
+  .kmodes{margin-bottom:6px;gap:6px}
+  .kmodes button{padding:6px 0;font-size:1.05rem}
+  .padrow{justify-content:center}
+  .padrow .pad{flex:0 1 auto;width:min(calc(100% - 54px), calc(100svh - 410px));min-width:200px}
+  #wmeta{margin:4px 0}
+  #wres{gap:6px}
+  #wres .cand{aspect-ratio:auto;height:64px;font-size:1.7rem}
+}
 /* v60：小さい文字を濃く・太く（波模様の上でも読みやすく） */
 :root:not([data-theme="dark"]){--sub:#2a3640}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sub:#c9d3d8}}

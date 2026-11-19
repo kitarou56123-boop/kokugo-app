@@ -455,7 +455,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（85）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（86）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -915,7 +915,7 @@ function showCands(top,shapes,olds){
   const best=Math.max(top[0].p, olds.length?olds[0].p:0);
   wmeta.textContent=(best<0.12 && !top[0].sure)
     ? "文字をはっきり認識できません。書き直すか、下の候補を確認してください。"
-    : (wordEdit>=0 ? `候補を押すと${wordEdit+1}字目が入れ替わります。` : "候補を押すと上の欄にたまります。続けて次の字を書けます。");
+    : (wordEdit>=0 ? `候補で${wordEdit+1}字目を入れ替え` : "候補を押すと上の欄にたまります");
   top.forEach(x=>{ const b=candBtn(x.char); const small=document.createElement("small");
     if(x.vari){ b.classList.add("old"); b.title="異体字（名前に使う字）"; small.textContent="異体字"; }
     else if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
@@ -3737,7 +3737,7 @@ h1.logo .name{padding-right:112px}
   .tabs{margin-bottom:6px}
   .kmodes{margin-bottom:6px;gap:6px}
   .kmodes button{padding:6px 0;font-size:1.05rem}
-  #wmeta{margin:4px 0}
+  #wmeta{margin:2px 0;font-size:.8rem;line-height:1.3}
   #wres{gap:6px}
   #wres .cand{aspect-ratio:auto;height:64px;font-size:1.7rem}
 }

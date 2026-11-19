@@ -455,7 +455,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（86）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（87）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -625,6 +625,38 @@ function wordPick(k){
   wmeta.textContent="";
   renderWord();
   wordPickInfo(k);
+  wordPredict();
+}
+/* v87：次の字の予測。よく使う言葉（約5万4千語）から、今までの字に続く字を出す */
+let PRED=null, PREDP=null;
+function loadPred(){
+  if(!PREDP) PREDP=(async()=>{
+    const bin=await getData("pred-1.bin");
+    const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    PRED=new Map();
+    for(const w of txt.split("\n")){
+      const cs=[...w];
+      for(let i=1;i<cs.length;i++){
+        const key=cs.slice(0,i).join(""), nx=cs[i];
+        let a=PRED.get(key); if(!a){ a=[]; PRED.set(key,a); }
+        if(a.length<8 && !a.some(x=>x.c===nx)) a.push({c:nx,w});
+      }
+    }
+  })().catch(e=>{ PREDP=null; throw e; });
+  return PREDP;
+}
+setTimeout(()=>loadPred().catch(()=>{}),4000);
+async function wordPredict(){
+  if(!wordChars.length || wordChars.length>=WORD_MAX || wordEdit>=0) return;
+  const id=recId;
+  try{ await loadPred(); }catch(e){ return; }
+  if(id!==recId || strokes.length || wordEdit>=0 || wres.children.length) return;
+  const cs=wordChars.map(x=>x.c);
+  const list=PRED.get(cs.join(""));
+  if(!list||!list.length) return;
+  const lab=document.createElement("div"); lab.className="wpred-t"; lab.textContent="次の字の予測（押すと入ります。書いてもOK）";
+  wmeta.appendChild(lab);
+  for(const x of list){ const b=candBtn(x.c); b.classList.add("wpred"); const sm=document.createElement("small"); sm.textContent=x.w; b.appendChild(sm); wres.appendChild(b); }
 }
 /* v85：候補を押しても大きな画面は出さず、読み方・意味を1行で見せる。続けて次の字を書ける */
 function wordPickInfo(k){
@@ -3776,6 +3808,8 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 .wgo:disabled{opacity:.35;cursor:default}
 .wdel{font-size:.9rem!important;color:#b00;grid-column:span 2;white-space:nowrap}
 .wsee{color:#1d5f6b!important}
+.wpred-t{margin-top:4px;color:#1d5f6b;font-weight:bold}
+.wpred{background:#eef6f7!important}
 .wmore{margin-left:6px;padding:2px 10px;border:1px solid #1d5f6b;border-radius:14px;background:#fff;color:#1d5f6b;font-size:.85rem}
 @media (max-width:340px){.wslot{width:44px;flex-basis:44px}.wslot span{font-size:24px}}
 .wbtns{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}

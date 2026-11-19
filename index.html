@@ -362,10 +362,10 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
   </div>
 
   <section id="p-write">
-    <div class="kmodes" id="wmodes"><button type="button" id="wmHand" aria-pressed="true">1字</button><button type="button" id="wmWord" aria-pressed="false">言葉</button><button type="button" id="wmParts" aria-pressed="false">部品で探す</button></div>
+    <div class="kmodes" id="wmodes"><button type="button" id="wmHand" aria-pressed="true">手で書く</button><button type="button" id="wmParts" aria-pressed="false">部品で探す</button></div>
     <div id="handBox">
-    <div id="wordUI" hidden>
-      <p class="wlabel">1字ずつ書いて、候補を押すと上に並んでいきます（4字まで。並んだ字を押すと選び直せます）</p>
+    <div id="wordUI">
+      <p class="wlabel">候補を押すと読み方・意味が出て、上の欄にもたまります。2字以上たまったら「この言葉を調べる」で言葉を調べられます。</p>
       <div class="wbar"><div class="wslots" id="wslots"></div><div class="wbtns"><button type="button" class="wgo" id="wgo" disabled>この言葉を調べる</button><button type="button" class="wclr" id="wclr">クリア</button></div></div>
     </div>
     <div class="padrow">
@@ -455,7 +455,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（82）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（83）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -600,18 +600,18 @@ function exportImg(){
   c.fillStyle="#fff"; c.fillRect(0,0,S,S); drawOn(c,S,S,"#000",S*0.03);
   return new Promise(r=>o.toBlob(r,"image/png"));
 }
-function candBtn(k){ const b=document.createElement("button"); b.className="cand"; b.textContent=k; b.onclick=()=>{ if(wordMode && b.closest("#wres")) return wordPick(k); openSheet(k); }; return b; }
+function candBtn(k){ const b=document.createElement("button"); b.className="cand"; b.textContent=k; b.onclick=()=>{ if(wordMode && b.closest("#wres")) wordPick(k); openSheet(k); }; return b; }
 
 const wmeta=document.getElementById("wmeta"), wres=document.getElementById("wres");
 
 /* v81：「言葉」モード。1字ずつ書いて候補を押すと上に並び、4字までの言葉を「よみで探す」で調べる */
-let wordMode=false, wordChars=[], wordEdit=-1;
+let wordMode=true, wordChars=[], wordEdit=-1;
 const WORD_MAX=4;
 function setWordMode(on){
   wordMode=on;
   if(!on) restoreReadWraps();
   document.getElementById("wordUI").hidden=!on;
-  document.getElementById("hint").textContent=on?"ここに1字ずつ書いてください":"ここに漢字を1文字書いてください";
+
   renderWord();
 }
 function wordCandList(){ return [...wres.querySelectorAll("button.cand:not(.wdel)")].map(b=>b.firstChild?b.firstChild.textContent:b.textContent); }
@@ -619,10 +619,10 @@ function wordPick(k){
   const out=document.getElementById("wordOut"); if(out && !out.hidden){ out.hidden=true; }
   const alts=wordCandList();
   if(wordEdit>=0 && wordEdit<wordChars.length){ wordChars[wordEdit]={c:k,alts}; }
-  else if(wordChars.length<WORD_MAX){ wordChars.push({c:k,alts}); }
+  else { wordChars.push({c:k,alts}); if(wordChars.length>WORD_MAX) wordChars.shift(); }
   wordEdit=-1;
   clearTimeout(recTimer); recId++; strokes=[]; redraw(); wres.innerHTML="";
-  wmeta.textContent=wordChars.length<WORD_MAX?`${wordChars.length+1}字目を書いてください。書き終わったら「この言葉を調べる」を押します。`:"4字そろいました。「この言葉を調べる」を押してください。";
+  wmeta.textContent=wordChars.length>=2?"続けて書くと言葉になります。「この言葉を調べる」で言葉を調べられます。":"";
   renderWord();
 }
 function wordClear(){
@@ -647,7 +647,7 @@ function renderWord(){
     b.onclick=()=>wordSlot(i); box.appendChild(b);
   });
   if(wordChars.length<WORD_MAX && wordEdit<0){ const d=document.createElement("div"); d.className="wslot now"; d.innerHTML="書いて<br>いる字"; box.appendChild(d); }
-  document.getElementById("wgo").disabled=!wordChars.length;
+  document.getElementById("wgo").disabled=wordChars.length<2;
 }
 function wordSlot(i){
   if(wordEdit===i){ wordEdit=-1; wres.innerHTML=""; wmeta.textContent=""; renderWord(); return; }
@@ -673,6 +673,7 @@ setTimeout(()=>{
     setTimeout(()=>out.scrollIntoView({behavior:"smooth",block:"start"}),300);
   };
   document.getElementById("wclr").onclick=()=>wordClear();
+  renderWord();
 },0);
 function schedule(){
   clearTimeout(recTimer);
@@ -894,7 +895,7 @@ function showCands(top,shapes,olds){
   const best=Math.max(top[0].p, olds.length?olds[0].p:0);
   wmeta.textContent=(best<0.12 && !top[0].sure)
     ? "文字をはっきり認識できません。書き直すか、下の候補を確認してください。"
-    : (wordMode ? `候補を押すと${wordEdit>=0?wordEdit+1:wordChars.length+1}字目に入ります。` : "候補を押すと読み方・意味が出ます。");
+    : (wordEdit>=0 ? `候補を押すと${wordEdit+1}字目が入れ替わります。` : "候補を押すと読み方・意味が出ます（上の欄にもたまります）。");
   top.forEach(x=>{ const b=candBtn(x.char); const small=document.createElement("small");
     if(x.vari){ b.classList.add("old"); b.title="異体字（名前に使う字）"; small.textContent="異体字"; }
     else if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
@@ -3640,14 +3641,12 @@ const KRAD_SRC="㐂匕\n㐆ノ勹ヨ\n㐬亠厶川\n㐮一｜ノ二亠ハ衣\n�
   const pres=document.getElementById("pres"), pnear=document.getElementById("pnear"), pgrid=document.getElementById("pgrid");
   let sel=[], built=false, showAll=false;
 
-  const wmWord=document.getElementById("wmWord");
   function setMode(m){
-    wmHand.setAttribute("aria-pressed",m==="hand"); wmParts.setAttribute("aria-pressed",m==="parts"); wmWord.setAttribute("aria-pressed",m==="word");
-    handBox.hidden=m==="parts"; partsBox.hidden=m!=="parts";
-    setWordMode(m==="word");
+    wmHand.setAttribute("aria-pressed",m==="hand"); wmParts.setAttribute("aria-pressed",m==="parts");
+    handBox.hidden=m!=="hand"; partsBox.hidden=m!=="parts";
     if(m==="parts" && !built){ buildGrid(); built=true; update(); }
   }
-  wmHand.onclick=()=>setMode("hand"); wmParts.onclick=()=>setMode("parts"); wmWord.onclick=()=>setMode("word");
+  wmHand.onclick=()=>setMode("hand"); wmParts.onclick=()=>setMode("parts");
 
   const pbtns=new Map();
   function buildGrid(){
@@ -3745,7 +3744,6 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 .credits{white-space:nowrap;text-align:left!important;display:table;margin-left:auto;margin-right:auto}
 .credits span{text-align:center}
 /* v81：言葉モード */
-#wmodes{grid-template-columns:1fr 1fr 1.25fr}
 .wlabel{font-size:.78rem;color:var(--muted,#567);margin:0 2px 6px;line-height:1.5}
 .wbar{display:flex;align-items:center;gap:6px;margin:0 0 8px;padding:7px;border:2px solid var(--ink);border-radius:14px;background:var(--surface)}
 .wslots{display:flex;gap:5px;flex:1;min-width:0}

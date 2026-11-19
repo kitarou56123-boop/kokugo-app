@@ -450,8 +450,8 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-19（79）</p>
-  <p class="meta" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-19（80）</p>
+  <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
 <div class="sheet-bg" id="sbg"></div>
@@ -1944,6 +1944,53 @@ async function showWordResult(text,info){
 
 /* ===== OCR（無料・端末内で処理） ===== */
 // 写真の下ごしらえ：明るさのムラ（影）をならし、文字と背景の差をはっきりさせ、周りに白い余白を付ける
+/* v80：キーボードのザラザラした表面などで出る細かい点々（ゴミ）を消す。
+   点々がたくさんある時だけ、文字に比べてとても小さい黒いかたまりを白にする */
+function removeSpeckles(d,w,h){
+  const n=w*h;
+  // 黒（文字）と白（背景）の境目を大津の方法で決める
+  const hs=new Float64Array(256); for(let p=0;p<n;p++) hs[d[p*4]]++;
+  let mu=0; for(let k=0;k<256;k++) mu+=k*hs[k]/n;
+  let w0=0,m0=0,best=-1,th=128; for(let k=0;k<256;k++){ w0+=hs[k]/n; m0+=k*hs[k]/n; if(w0<=0||w0>=1) continue; const b=(mu*w0-m0)**2/(w0*(1-w0)); if(b>best){ best=b; th=k; } }
+  const ink=new Uint8Array(n); for(let p=0;p<n;p++) ink[p]=d[p*4]<=th?1:0;
+  const lab=new Int32Array(n), stack=new Int32Array(n), comps=[]; let id=0;
+  for(let p=0;p<n;p++){
+    if(lab[p]||!ink[p]) continue;
+    id++; let sp=0, area=0, x0=w,y0=h,x1=0,y1=0; stack[sp++]=p; lab[p]=id;
+    while(sp){ const q=stack[--sp]; area++; const x=q%w, y=(q-x)/w;
+      if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const nx=x+dx, ny=y+dy;
+        if(nx<0||ny<0||nx>=w||ny>=h) continue; const r=ny*w+nx;
+        if(!lab[r] && ink[r]){ lab[r]=id; stack[sp++]=r; } } }
+    // 囲みのふちにかかった大きなかたまり（キーのふちや枠の線など）は字ではない
+    const edge=(x0===0||y0===0||x1===w-1||y1===h-1) && (x1-x0>w*0.5||y1-y0>h*0.5);
+    comps.push({area,size:Math.max(x1-x0,y1-y0)+1,edge});
+  }
+  let big=0, bigSize=0; for(const c of comps) if(!c.edge && c.area>big){ big=c.area; bigSize=c.size; }
+  const keep=new Uint8Array(id+1); let nKeep=0, nKill=0, nEdge=0;
+  comps.forEach((c,i)=>{ if(c.edge){ nEdge++; return; } if(!(c.area<big*0.02 && c.size<bigSize*0.15)){ keep[i+1]=1; nKeep++; } else nKill++; });
+  // 小さい点々がたくさんあって、文字のかたまりよりずっと多い時だけ点々を消す（濁点や句読点を消さないため）
+  const noisy=nKill>=60 && nKill>=nKeep*2;
+  if(!noisy){ if(!nEdge) return false; comps.forEach((c,i)=>{ if(!c.edge) keep[i+1]=1; }); }
+  // 点々が多い写真は、白黒2色にしてゴミを消した形で読ませる
+  for(let p=0;p<n;p++){ const v=(ink[p]&&keep[lab[p]])?0:255, i=p*4; d[i]=d[i+1]=d[i+2]=v; }
+  return true;
+}
+/* 点々を消した白黒の絵を、文字のまわりだけに切り詰めて作る（消す必要がなければ null） */
+function ocrClean(src){
+  const w=src.width, h=src.height, c=document.createElement("canvas"); c.width=w; c.height=h;
+  const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(src,0,0);
+  const im=g.getImageData(0,0,w,h), d=im.data;
+  if(!removeSpeckles(d,w,h)) return null;
+  let x0=w,y0=h,x1=-1,y1=-1;
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(d[(y*w+x)*4]<128){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  if(x1<0) return null;
+  g.putImageData(im,0,0);
+  const m=Math.round(Math.max(x1-x0,y1-y0)*0.06)+12, ow=x1-x0+1+m*2, oh=y1-y0+1+m*2;
+  const o=document.createElement("canvas"); o.width=ow; o.height=oh;
+  const og=o.getContext("2d"); og.fillStyle="#fff"; og.fillRect(0,0,ow,oh); og.drawImage(c,x0,y0,x1-x0+1,y1-y0+1,m,m,x1-x0+1,y1-y0+1);
+  return o;
+}
 function ocrPrep(src){
   const w=src.width, h=src.height;
   const c=document.createElement("canvas"); c.width=w; c.height=h;
@@ -2032,6 +2079,140 @@ function camStopUI(on){
     cstat.insertAdjacentElement("afterend",b); }
   b.hidden=!on;
 }
+/* v80：手書きエンジンで1字ずつ確かめる。カメラの読み取り（Tesseract）は魚へんなど珍しい1字や
+   「口」を「品」と読むような間違いが多い。1行の言葉を字の幅で区切り、手書きエンジンに1字ずつ読ませ、
+   エンジンが強く自信を持って別の字だと言う時だけ入れ替える（試験で正解率がさらに上がった） */
+async function segRead(pr,nHint,vertical){
+  const w=pr.width,h=pr.height,g=pr.getContext("2d",{willReadFrequently:true}),d=g.getImageData(0,0,w,h).data;
+  const ink=(x,y)=>d[(y*w+x)*4]<128;
+  let x0=w,y0=h,x1=-1,y1=-1;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(ink(x,y)){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+  if(x1<0) return null;
+  const L=vertical?(y1-y0+1):(x1-x0+1), T=vertical?(x1-x0+1):(y1-y0+1);
+  let n=nHint&&Math.abs(L/(T*nHint)-1)<0.4?nHint:Math.max(1,Math.round(L/(T*1.02)));
+  const prof=new Float32Array(L);
+  for(let i=0;i<L;i++){let c=0; for(let j=0;j<T;j++){ const x=vertical?x0+j:x0+i, y=vertical?y0+i:y0+j; if(ink(x,y))c++; } prof[i]=c;}
+  const cuts=[0]; const pitch=L/n;
+  for(let k=1;k<n;k++){ const c=Math.round(k*pitch), r=Math.round(pitch*0.3); let bi=c,bv=1e9;
+    for(let i=Math.max(1,c-r);i<=Math.min(L-2,c+r);i++){ const v=prof[i]+Math.abs(i-c)*0.02*T; if(v<bv){bv=v;bi=i;} } cuts.push(bi); }
+  cuts.push(L);
+  const out=[];
+  for(let k=0;k<n;k++){
+    const a=cuts[k],b=cuts[k+1]; const raw=document.createElement("canvas"); raw.width=256; raw.height=256; const rg=raw.getContext("2d"); rg.fillStyle="#fff"; rg.fillRect(0,0,256,256);
+    const sx=vertical?x0:x0+a, sy=vertical?y0+a:y0, sw=vertical?T:b-a, sh=vertical?b-a:T;
+    const kk=230/Math.max(sw,sh); rg.drawImage(pr,sx,sy,sw,sh,(256-sw*kk)/2,(256-sh*kk)/2,sw*kk,sh*kk);
+    let t; try{ t=tensorFromCanvas(raw);}catch(e){ out.push(null); continue; }
+    const res=await runModel(t); const P=handSoftmax(Array.from(res.logits.data));
+    const top=P.map((p,i)=>[handLabels[i].char,p]).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    out.push({top,P});
+  }
+  return out;
+}
+/* 形がそっくりな漢字とカタカナ（口とロなど）。前後が漢字なら漢字のほうにする */
+const CAM_LA=[["口","ロ"],["二","ニ"],["工","エ"],["力","カ"],["夕","タ"],["八","ハ"],["一","ー"]];
+const CAM_LA_MAP=new Map(); for(const g of CAM_LA) for(const c of g) CAM_LA_MAP.set(c,g);
+const isHanC=c=>!!c && /\p{Script=Han}/u.test(c);
+function camFixLookalikes(chars){
+  return chars.map((c,i)=>{ const g=CAM_LA_MAP.get(c); if(!g) return c;
+    const a=chars[i-1], b=chars[i+1];
+    const hanCtx=(isHanC(a)&&(b===undefined||isHanC(b)))||(isHanC(b)&&(a===undefined||isHanC(a)));
+    return hanCtx?g[0]:c; });
+}
+async function refineByModel(prepped,best,boxR){
+  if(!best || camLang==="eng") return best;
+  const multi=(best.lines||[]).length>1;
+  const vertical=best.lang==="jpn_vert";
+  let chars=[...(best.text||"").replace(/\s+/g,"")];
+  const isJ=c=>/[\p{Script=Han}\u3041-\u30ff]/u.test(c);
+  const allJ=chars.length>0 && chars.every(isJ);
+  const weak=!chars.length || (best.conf||0)<45 || (!allJ && chars.some(c=>/[A-Za-z0-9\]\[|]/.test(c)));
+  if(multi && !(weak && boxR>0.6 && boxR<1.6)) return best;
+  let out=chars.slice(), changed=false;
+  if(allJ || weak){
+    await loadHandModel();
+    const idx=new Map(); handLabels.forEach((x,i)=>{ if(x&&x.char) idx.set(x.char,i); });
+    const pOf=(c,P)=>{ const g=CAM_LA_MAP.get(c); if(g) return g.reduce((s,x)=>s+(idx.has(x)?P[idx.get(x)]:0),0); const k=idx.get(c); return k==null?0:P[k]; };
+    // 1字だけ囲んだらしい時（魚へんの字など）：手書きエンジンで1字として読む
+    const one=(weak || chars.length<=1) && boxR>0.6 && boxR<1.6 ? await segRead(prepped,0,false) : null;
+    if(one && one.length===1 && one[0] && one[0].top[0][1]>=0.6 && !(chars.length===1 && chars[0]===one[0].top[0][0])){ out=[one[0].top[0][0]]; changed=true; }
+    else if(allJ && !multi && chars.length<=12){
+      const cells=await segRead(prepped,chars.length,vertical);
+      if(cells && cells.length===chars.length){
+        cells.forEach((c,i)=>{ if(!c) return; const mc=c.top[0][0], mp=pOf(mc,c.P), pt=pOf(chars[i],c.P);
+          if(CAM_LA_MAP.has(mc)&&CAM_LA_MAP.get(mc)===CAM_LA_MAP.get(chars[i])) return;
+          if(mc!==chars[i] && mp>=0.8 && pt<0.05 && (idx.has(chars[i]) || mp>=0.95)){ out[i]=mc; changed=true; } });
+      }
+    }
+  }
+  const fixed=camFixLookalikes(out); if(fixed.join("")!==out.join("")){ out=fixed; changed=true; }
+  if(!changed) return best;
+  const t=out.join("");
+  return Object.assign({},best,{text:t,lines:[{t,c:best.conf,sc:null}],refined:true});
+}
+/* v80：キーボードのキーのように、明るい周りの中に暗い板があり、その中に白い字がある時、
+   板の部分だけを切り出す（周りが明るいと白黒の判断を間違えるため）。見つからなければ null */
+function findPlate(src){
+  const k=Math.min(1,300/Math.max(src.width,src.height)), w=Math.max(1,Math.round(src.width*k)), h=Math.max(1,Math.round(src.height*k));
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const g=c.getContext("2d",{willReadFrequently:true}); g.filter="blur(1.5px)"; g.drawImage(src,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data, n=w*h, gray=new Uint8Array(n), hs=new Float64Array(256);
+  for(let i=0,j=0;j<n;i+=4,j++){ const v=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]); gray[j]=v; hs[v]++; }
+  let mu=0; for(let t=0;t<256;t++) mu+=t*hs[t]/n;
+  let w0=0,m0=0,best=-1,th=128; for(let t=0;t<256;t++){ w0+=hs[t]/n; m0+=t*hs[t]/n; if(w0<=0||w0>=1) continue; const b=(mu*w0-m0)**2/(w0*(1-w0)); if(b>best){ best=b; th=t; } }
+  const lab=new Int32Array(n), st=new Int32Array(n); let id=0, bestC=null;
+  for(let p=0;p<n;p++){
+    if(lab[p]||gray[p]>th) continue;
+    id++; let sp=0,area=0,x0=w,y0=h,x1=0,y1=0; st[sp++]=p; lab[p]=id;
+    while(sp){ const q=st[--sp], x=q%w, y=(q-x)/w; area++; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+      for(const r of [q-1,q+1,q-w,q+w]){ if(r<0||r>=n) continue; if((r===q-1&&x===0)||(r===q+1&&x===w-1)) continue; if(!lab[r]&&gray[r]<=th){ lab[r]=id; st[sp++]=r; } } }
+    if(!bestC||area>bestC.area) bestC={area,x0,y0,x1,y1};
+  }
+  if(!bestC) return null;
+  const bw=bestC.x1-bestC.x0+1, bh=bestC.y1-bestC.y0+1;
+  // 板が全体の2割〜9割を占め、周りに明るいところが残っている時だけ
+  if(bw*bh<n*0.2 || bw*bh>n*0.9 || bestC.area<bw*bh*0.75) return null;
+  const ix=Math.round(bw*0.04), iy=Math.round(bh*0.06);
+  const sx=(bestC.x0+ix)/k, sy=(bestC.y0+iy)/k, sw=(bw-ix*2)/k, sh=(bh-iy*2)/k;
+  if(sw<8||sh<8) return null;
+  const o=document.createElement("canvas"); o.width=Math.round(sw); o.height=Math.round(sh);
+  o.getContext("2d").drawImage(src,sx,sy,sw,sh,0,0,o.width,o.height);
+  return o;
+}
+/* 写真を整えて、決めた順番で読み方を試し、一番良い結果を返す（途中で止められたら null） */
+async function ocrBest(img,plan,alive,onStep,depth){
+  const prepped=ocrPrep(img);
+  let best=null;
+  for(const [lang,psm,stopAt] of plan){
+    if(onStep) onStep();
+    const r=await ocrTry(prepped,lang,psm);
+    if(!alive()) return null;
+    if(!best||r.score>best.score) best=r;
+    if(stopAt && best.conf>=stopAt) break;   // 十分良ければ残りは省略して時間短縮
+  }
+  // v80：うまく読めない時（ザラザラした面の白い字など）は、点々を消した白黒の絵で読み直す
+  if(camLang!=="eng" && (!best || best.conf<60)){
+    const cl=ocrClean(prepped);
+    if(cl) for(const psm of [13,7]){
+      cstat.textContent="細かい点々を消して読み直しています…";
+      const r=await ocrTry(cl,"jpn",psm);
+      if(!alive()) return null;
+      if(r.text && (!best||r.score>best.score)) best=r;
+      if(best.conf>=70) break;
+    }
+  }
+  try{ const rb=await refineByModel(prepped,best,img.height/img.width); if(!alive()) return null; best=rb; }catch(e){}
+  // それでも読めない時は、暗い板（キーなど）の部分だけを切り出して読み直す
+  if(!depth && camLang!=="eng" && !(best&&best.refined) && (!best || best.conf<60 || !best.text)){
+    const pl=findPlate(img);
+    if(pl){
+      cstat.textContent="字のまわりだけを切り出して読み直しています…";
+      const r=await ocrBest(fitTextSize(pl),selPlan(pl.height/pl.width),alive,onStep,1);
+      if(!alive()) return null;
+      if(r && r.text && (!best || !best.text || r.score>best.score)) return r;
+    }
+  }
+  return best;
+}
 async function runOCRPlan(img,plan){
   if(camBusy) return;
   const myGen=++camGen;
@@ -2046,15 +2227,7 @@ async function runOCRPlan(img,plan){
   try{
     cstat.textContent="写真を見やすく整えています…";
     await new Promise(r=>setTimeout(r,30));
-    const prepped=ocrPrep(img);
-    let best=null;
-    for(const [lang,psm,stopAt] of plan){
-      step++;
-      const r=await ocrTry(prepped,lang,psm);
-      if(myGen!==camGen) return;
-      if(!best||r.score>best.score) best=r;
-      if(stopAt && best.conf>=stopAt) break;   // 十分良ければ残りは省略して時間短縮
-    }
+    const best=await ocrBest(img,plan,()=>myGen===camGen,()=>{ step++; });
     if(myGen!==camGen) return;
     // 読みがなの辞書は大きいので、初めて使う時は読み取り用の作業者を片付けてメモリを空ける
     if(camLang!=="eng"&&!kuroReady) stopOcrWorkers();
@@ -2095,13 +2268,55 @@ async function runSelectionOCR(){
   bg.drawImage(srcImg,hx,hy,hw,hh,0,0,big.width,big.height);
   if(tmp&&tmp.close) tmp.close();
   // 囲みの形から、縦書き・横書き・1文字を見分けて読み方を選ぶ
-  const r=ch/cw; let plan;
-  if(camLang==="eng"){ runOCRPlan(big, r<0.3?[["eng",7,80],["eng",6]]:[["eng",6,80],["eng",7]]); return; }
+  runOCRPlan(fitTextSize(big),selPlan(ch/cw));
+}
+/* v80：字の大きさを読み取りに一番向いた大きさ（1字が約32ドット）にそろえる。
+   大きすぎても小さすぎても読み間違いが増える（試験で正解率が5割→8割台に上がった） */
+function textSizeOf(src){
+  const k=Math.min(1,400/Math.max(src.width,src.height)), w=Math.max(1,Math.round(src.width*k)), h=Math.max(1,Math.round(src.height*k));
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(src,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data, n=w*h, gray=new Uint8Array(n), hs=new Float64Array(256);
+  for(let i=0,j=0;j<n;i+=4,j++){ const v=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]); gray[j]=v; hs[v]++; }
+  let mu=0; for(let t=0;t<256;t++) mu+=t*hs[t]/n;
+  let w0=0,m0=0,best=-1,th=128; for(let t=0;t<256;t++){ w0+=hs[t]/n; m0+=t*hs[t]/n; if(w0<=0||w0>=1) continue; const b=(mu*w0-m0)**2/(w0*(1-w0)); if(b>best){ best=b; th=t; } }
+  let dark=0; for(let j=0;j<n;j++) if(gray[j]<=th) dark++;
+  const inkDark=dark<=n/2;   // 少ない方が文字
+  const ink=new Uint8Array(n); for(let j=0;j<n;j++) ink[j]=((gray[j]<=th)===inkDark)?1:0;
+  const lab=new Uint8Array(n), st=new Int32Array(n), sizes=[];
+  for(let p=0;p<n;p++){
+    if(lab[p]||!ink[p]) continue;
+    let sp=0,x0=w,y0=h,x1=0,y1=0; st[sp++]=p; lab[p]=1;
+    while(sp){ const q=st[--sp], x=q%w, y=(q-x)/w; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const nx=x+dx, ny=y+dy; if(nx<0||ny<0||nx>=w||ny>=h) continue; const r=ny*w+nx; if(!lab[r]&&ink[r]){ lab[r]=1; st[sp++]=r; } } }
+    const sz=Math.max(x1-x0,y1-y0)+1;
+    // 囲みのふちや背景のかたまり（画面の半分以上）は字ではないので除く
+    if(sz>=3 && sz<Math.min(w,h)*0.95) sizes.push(sz);
+  }
+  if(!sizes.length) return 0;
+  sizes.sort((a,b)=>b-a);
+  // 大きいかたまり（一番大きいものの4割以上）の真ん中の大きさ＝字の大きさ。細かい点々に引っぱられない
+  const top=sizes.filter(x=>x>=sizes[0]*0.4);
+  return top[Math.floor(top.length/2)]/k;
+}
+function fitTextSize(src){
+  let size=0; try{ size=textSizeOf(src); }catch(e){ size=0; }
+  if(!size) return src;
+  const sc=Math.max(0.2,Math.min(4,32/size));
+  if(Math.abs(sc-1)<0.08) return src;
+  const o=document.createElement("canvas"); o.width=Math.max(1,Math.round(src.width*sc)); o.height=Math.max(1,Math.round(src.height*sc));
+  const g=o.getContext("2d"); g.imageSmoothingEnabled=true; g.imageSmoothingQuality="high"; g.drawImage(src,0,0,o.width,o.height);
+  return o;
+}
+function selPlan(r){
+  let plan;
+  if(camLang==="eng") return r<0.3?[["eng",7,80],["eng",6]]:[["eng",6,80],["eng",7]];
   if(r>1.6) plan=[["jpn_vert",5,80],["jpn",6]];             // 縦長 → 縦書き
   else if(r<0.3) plan=[["jpn",7,80],["jpn",6]];             // 横に細長い → 横1行
   else if(r<0.62) plan=[["jpn",6,80],["jpn",7]];            // 横長 → 横書き
+  else if(r<0.95) plan=[["jpn",7,80],["jpn",6]];            // やや横長（「理想」など2字の言葉）→ 横書きだけ。縦書きで読むと字の順番が逆になり、字も切れる
   else plan=[["jpn",6,85],["jpn_vert",5,85],["jpn",10]];    // ほぼ正方形 → 横・縦・1文字を試す
-  runOCRPlan(big,plan);
+  return plan;
 }
 
 // 囲みがある場合は囲んだ範囲を読み取る。囲みがない場合だけ写真全体を読む
@@ -3434,6 +3649,20 @@ h1.logo .name{padding-right:112px}
 .meta{font-size:.9rem}
 /* 「日本語を読む」が選ばれている時に白い字が見えなくなっていたのを直す */
 body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
+/* v80：手書き枠を広く。横のボタンを細く、「ここを押す」を枠の下へ、情報提供を1行ずつに */
+@media (max-width:600px){
+  .wrap{padding-left:10px;padding-right:10px}
+  .padrow{gap:4px}
+  .side{width:38px;gap:4px}
+  .side .btn{font-size:.74rem;padding:0 1px}
+}
+#p-write .pastebtn{margin-top:12px;padding-top:12px}
+#p-write .pastebtn .pushmark{position:static;display:table;margin:8px 0 0 auto;padding:8px 16px}
+.credits{font-size:min(.8rem,2.75vw)!important;line-height:1.7}
+.credits span{font-size:.8rem}
+.credits br{display:block}
+.credits{white-space:nowrap;text-align:left!important;display:table;margin-left:auto;margin-right:auto}
+.credits span{text-align:center}
 </style>
 </body>
 </html>

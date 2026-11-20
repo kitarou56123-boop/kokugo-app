@@ -455,7 +455,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（88）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（89）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1961,12 +1961,24 @@ function toKata(s){ return s.replace(/[\u3041-\u3096]/g,c=>String.fromCharCode(c
 function dictReading(w){
   if(!MEDWMAP){ MEDWMAP=new Map(); const rows=Array.isArray(MEDW)?MEDW:String(MEDW).split("\n").map(l=>l.split("|")); for(const w of rows){ if(w&&w[0]&&w[1]&&!MEDWMAP.has(w[0])) MEDWMAP.set(w[0],w[1]); } }
   if(MEDWMAP.has(w)) return MEDWMAP.get(w);
-  const es=MEDJA&&MEDJA.get(w); if(!es) return (PREDW&&PREDW.read.get(w))||"";
+  const es=MEDJA&&MEDJA.get(w); if(!es) return (PREDW&&PREDW.read.get(w))||(YOMI&&YOMI.get(w))||"";
   for(const e of es) if(e.ks.includes(w)&&e.ka[0]) return toHira(e.ka[0]);
   return "";
 }
+/* v89：読みがなの辞書が知らない言葉（秋葵＝おくら、蒲公英など）の読み。約6万8千語 */
+let YOMI=null, YOMIP=null;
+function loadYomi(){
+  if(!YOMIP) YOMIP=(async()=>{
+    const bin=await getData("yomi-1.bin");
+    const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    const m=new Map(); for(const l of txt.split("\n")){ const i=l.indexOf("|"); if(i>0) m.set(l.slice(0,i),l.slice(i+1)); }
+    YOMI=m; return m;
+  })().catch(e=>{ YOMIP=null; throw e; });
+  return YOMIP;
+}
 async function fixReadings(toks){
   try{ await predWords(); }catch(e){}
+  try{ await loadYomi(); }catch(e){}
   try{ await loadMed(); }catch(e){ return toks; }
   const out=[];
   for(let i=0;i<toks.length;){
@@ -2271,8 +2283,11 @@ async function wordRescue(prepped,best){
   const n=chars.length;
   if(n<2 || n>4 || !chars.every(c=>/\p{Script=Han}/u.test(c))) return best;
   const W=await predWords();
+  try{ await loadYomi(); await loadMed(); }catch(e){}
   const cur=chars.join("");
-  if(W.set.has(cur) || dictReading(cur)) return best;
+  // よく使う言葉・医学用語ならそのまま。読みだけの辞書（珍しい言葉や名前が多い）にある時は、形がずっと良く合う時だけ直す
+  const yomiOnly=!!(YOMI&&YOMI.has(cur));
+  if(W.set.has(cur) || (!yomiOnly && dictReading(cur))) return best;
   await loadHandModel();
   const cells=await segRead(prepped,n,best.lang==="jpn_vert");
   if(!cells || cells.length!==n || cells.some(c=>!c)) return best;
@@ -2291,7 +2306,7 @@ async function wordRescue(prepped,best){
     for(let k=0;k<n;k++){ const r=rel(k,cs[k]); if(r<0.3){ ok=false; break; } s*=r; }
     if(ok && s>bestS){ bestS=s; bestW=w; }
   }
-  if(!bestW || bestS<curS*1.5) return best;
+  if(!bestW || bestS<curS*(yomiOnly?3:1.5)) return best;
   return Object.assign({},best,{text:bestW,lines:[{t:bestW,c:best.conf,sc:null}],refined:true});
 }
 async function refineByModel(prepped,best,boxR){

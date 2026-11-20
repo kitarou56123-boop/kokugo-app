@@ -455,7 +455,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（90）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（91）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1965,14 +1965,15 @@ function dictReading(w){
   for(const e of es) if(e.ks.includes(w)&&e.ka[0]) return toHira(e.ka[0]);
   return "";
 }
-/* v89：読みがなの辞書が知らない言葉（秋葵＝おくら、蒲公英など）の読み。約6万8千語 */
-let YOMI=null, YOMIP=null, YOMIREV=null;
+/* v89：読みがなの辞書が知らない言葉（秋葵＝おくら、蒲公英など）の読み。v91：国語辞典の見出し（心太＝ところてん など）を加えて約18万語 */
+let YOMI=null, YOMIALT=null, YOMIP=null, YOMIREV=null;
 function loadYomi(){
   if(!YOMIP) YOMIP=(async()=>{
-    const bin=await getData("yomi-1.bin");
+    const bin=await getData("yomi-2.bin");
     const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-    const m=new Map(); for(const l of txt.split("\n")){ const i=l.indexOf("|"); if(i>0) m.set(l.slice(0,i),l.slice(i+1)); }
-    YOMI=m; return m;
+    const m=new Map(), alt=new Map();
+    for(const l of txt.split("\n")){ const i=l.indexOf("|"); if(i<1) continue; const rs=l.slice(i+1).split(","); const w=l.slice(0,i); m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); }
+    YOMI=m; YOMIALT=alt; return m;
   })().catch(e=>{ YOMIP=null; throw e; });
   return YOMIP;
 }
@@ -2588,8 +2589,8 @@ wordBtn.onclick=async()=>{
       if(hasKanji){ const r=(PREDW.read.get(raw))||YOMI.get(raw); if(r) addW(raw,r); }
       else {
         if(!YOMIREV){ YOMIREV=new Map(); const ad=(r,w)=>{ const k=norm(r); if(!YOMIREV.has(k)) YOMIREV.set(k,[]); YOMIREV.get(k).push(w); };
-          for(const [w,r] of PREDW.read) ad(r,w); for(const [w,rs] of PREDW.alt) for(const r of rs) ad(r,w); for(const [w,r] of YOMI) if(!PREDW.read.has(w)) ad(r,w); }
-        for(const w of (YOMIREV.get(n)||[]).slice(0,10)) addW(w,(PREDW.alt.get(w)||[]).find(r=>norm(r)===n)||(PREDW.read.get(w))||YOMI.get(w));
+          for(const [w,r] of PREDW.read) ad(r,w); for(const [w,rs] of PREDW.alt) for(const r of rs) ad(r,w); for(const [w,r] of YOMI) if(!PREDW.read.has(w)){ ad(r,w); for(const r2 of (YOMIALT.get(w)||[])) ad(r2,w); } }
+        for(const w of [...new Set(YOMIREV.get(n)||[])].slice(0,15)) addW(w,n);
       }
     }catch(e){}
     const arr=[...found.values()].slice(0,20);

@@ -455,7 +455,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（89）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（90）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1966,7 +1966,7 @@ function dictReading(w){
   return "";
 }
 /* v89：読みがなの辞書が知らない言葉（秋葵＝おくら、蒲公英など）の読み。約6万8千語 */
-let YOMI=null, YOMIP=null;
+let YOMI=null, YOMIP=null, YOMIREV=null;
 function loadYomi(){
   if(!YOMIP) YOMIP=(async()=>{
     const bin=await getData("yomi-1.bin");
@@ -2269,10 +2269,10 @@ function camFixLookalikes(chars){
 let PREDW=null, PREDWP=null;
 function predWords(){
   if(!PREDWP) PREDWP=(async()=>{
-    const bin=await getData("pred-2.bin");
+    const bin=await getData("pred-3.bin");
     const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-    const W={list:[],set:new Set(),byLen:{},read:new Map()};
-    for(const l of txt.split("\n")){ if(!l) continue; const [w,r]=l.split("|"); W.list.push(w); W.set.add(w); if(r) W.read.set(w,r); const n=[...w].length; (W.byLen[n]=W.byLen[n]||[]).push(w); }
+    const W={list:[],set:new Set(),byLen:{},read:new Map(),alt:new Map()};
+    for(const l of txt.split("\n")){ if(!l) continue; const [w,r]=l.split("|"); W.list.push(w); W.set.add(w); if(r){ const rs=r.split(","); W.read.set(w,rs[0]); if(rs.length>1) W.alt.set(w,rs.slice(1)); } const n=[...w].length; (W.byLen[n]=W.byLen[n]||[]).push(w); }
     PREDW=W; return W;
   })().catch(e=>{ PREDWP=null; throw e; });
   return PREDWP;
@@ -2581,6 +2581,17 @@ wordBtn.onclick=async()=>{
     for(const [w,r,m] of rows) if(w&&hit(w,r)) found.set(w,{word:w,reading:r||"",meaning:m||""});
     // 専門用語辞書（英語の説明つき）
     try{ await loadMed(); for(const ent of (MEDJA.get(hasKanji?raw:s)||[])){ const w=ent.ks[0]; if(!found.has(w)) found.set(w,{word:w,reading:ent.ka[0]||"",meaning:"英語："+ent.g.split(" / ")[0]}); } }catch(e){}
+    // v90：読みがなの辞書にしかない言葉（秋葵＝おくら など）も探す
+    try{
+      await predWords(); await loadYomi();
+      const addW=(w,r)=>{ if(w && !found.has(w)) found.set(w,{word:w,reading:r,meaning:[...w].filter(c=>meaningOf(c)).map(c=>`${c}：${meaningOf(c).text}`).join("　")}); };
+      if(hasKanji){ const r=(PREDW.read.get(raw))||YOMI.get(raw); if(r) addW(raw,r); }
+      else {
+        if(!YOMIREV){ YOMIREV=new Map(); const ad=(r,w)=>{ const k=norm(r); if(!YOMIREV.has(k)) YOMIREV.set(k,[]); YOMIREV.get(k).push(w); };
+          for(const [w,r] of PREDW.read) ad(r,w); for(const [w,rs] of PREDW.alt) for(const r of rs) ad(r,w); for(const [w,r] of YOMI) if(!PREDW.read.has(w)) ad(r,w); }
+        for(const w of (YOMIREV.get(n)||[]).slice(0,10)) addW(w,(PREDW.alt.get(w)||[]).find(r=>norm(r)===n)||(PREDW.read.get(w))||YOMI.get(w));
+      }
+    }catch(e){}
     const arr=[...found.values()].slice(0,20);
     // 漢字で入力された言葉：一字ずつの意味と英語で説明する
     let own=null;

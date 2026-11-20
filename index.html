@@ -455,7 +455,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（87）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（88）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -631,10 +631,9 @@ function wordPick(k){
 let PRED=null, PREDP=null;
 function loadPred(){
   if(!PREDP) PREDP=(async()=>{
-    const bin=await getData("pred-1.bin");
-    const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    const W=await predWords();
     PRED=new Map();
-    for(const w of txt.split("\n")){
+    for(const w of W.list){
       const cs=[...w];
       for(let i=1;i<cs.length;i++){
         const key=cs.slice(0,i).join(""), nx=cs[i];
@@ -1962,11 +1961,12 @@ function toKata(s){ return s.replace(/[\u3041-\u3096]/g,c=>String.fromCharCode(c
 function dictReading(w){
   if(!MEDWMAP){ MEDWMAP=new Map(); const rows=Array.isArray(MEDW)?MEDW:String(MEDW).split("\n").map(l=>l.split("|")); for(const w of rows){ if(w&&w[0]&&w[1]&&!MEDWMAP.has(w[0])) MEDWMAP.set(w[0],w[1]); } }
   if(MEDWMAP.has(w)) return MEDWMAP.get(w);
-  const es=MEDJA&&MEDJA.get(w); if(!es) return "";
+  const es=MEDJA&&MEDJA.get(w); if(!es) return (PREDW&&PREDW.read.get(w))||"";
   for(const e of es) if(e.ks.includes(w)&&e.ka[0]) return toHira(e.ka[0]);
   return "";
 }
 async function fixReadings(toks){
+  try{ await predWords(); }catch(e){}
   try{ await loadMed(); }catch(e){ return toks; }
   const out=[];
   for(let i=0;i<toks.length;){
@@ -2250,6 +2250,50 @@ function camFixLookalikes(chars){
     const hanCtx=(isHanC(a)&&(b===undefined||isHanC(b)))||(isHanC(b)&&(a===undefined||isHanC(a)));
     return hanCtx?g[0]:c; });
 }
+/* v88：辞書にない2〜4字の言葉に読めた時（檸檬→李様など、2字とも取り違えた時）、
+   手書きエンジンで1字ずつ形を調べ、形が合う「よく使う言葉」があればそちらに直す。
+   エンジンが覚えていない珍しい字（檸・檬など）も、前もって計算した表で形を比べる */
+/* よく使う言葉の一覧（よく使う順）。読みがなの辞書にない言葉（檸檬など）は「言葉|よみ」の形で読みも持つ */
+let PREDW=null, PREDWP=null;
+function predWords(){
+  if(!PREDWP) PREDWP=(async()=>{
+    const bin=await getData("pred-2.bin");
+    const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    const W={list:[],set:new Set(),byLen:{},read:new Map()};
+    for(const l of txt.split("\n")){ if(!l) continue; const [w,r]=l.split("|"); W.list.push(w); W.set.add(w); if(r) W.read.set(w,r); const n=[...w].length; (W.byLen[n]=W.byLen[n]||[]).push(w); }
+    PREDW=W; return W;
+  })().catch(e=>{ PREDWP=null; throw e; });
+  return PREDWP;
+}
+async function wordRescue(prepped,best){
+  if(!best || camLang==="eng" || (best.lines||[]).length>1) return best;
+  const chars=[...(best.text||"").replace(/\s+/g,"")];
+  const n=chars.length;
+  if(n<2 || n>4 || !chars.every(c=>/\p{Script=Han}/u.test(c))) return best;
+  const W=await predWords();
+  const cur=chars.join("");
+  if(W.set.has(cur) || dictReading(cur)) return best;
+  await loadHandModel();
+  const cells=await segRead(prepped,n,best.lang==="jpn_vert");
+  if(!cells || cells.length!==n || cells.some(c=>!c)) return best;
+  const T=prepareRare(), idx=new Map(); handLabels.forEach((x,i)=>{ if(x&&x.char&&!idx.has(x.char)) idx.set(x.char,i); });
+  const rrow=new Map(); T.ch.forEach((c,r)=>{ if(!rrow.has(c)) rrow.set(c,r); });
+  const info=cells.map(c=>{ const h=c.P.map(Math.sqrt); let mx=0; for(const v of h) if(v>mx) mx=v; return {h,mx,memo:new Map()}; });
+  const sc=(k,ch)=>{ const I=info[k]; if(I.memo.has(ch)) return I.memo.get(ch);
+    let v=0; if(idx.has(ch)) v=I.h[idx.get(ch)];
+    else if(rrow.has(ch)){ const r=rrow.get(ch); let s=0; for(let j=0;j<12;j++) s+=I.h[T.ix[r*12+j]]*T.w[r*12+j]; v=s*0.85; }
+    I.memo.set(ch,v); return v; };
+  const rel=(k,ch)=>sc(k,ch)/(info[k].mx||1);
+  let curS=1; chars.forEach((c,k)=>{ curS*=Math.max(rel(k,c),0.02); });
+  let bestW=null, bestS=0;
+  for(const w of (W.byLen[n]||[])){
+    const cs=[...w]; let s=1, ok=true;
+    for(let k=0;k<n;k++){ const r=rel(k,cs[k]); if(r<0.3){ ok=false; break; } s*=r; }
+    if(ok && s>bestS){ bestS=s; bestW=w; }
+  }
+  if(!bestW || bestS<curS*1.5) return best;
+  return Object.assign({},best,{text:bestW,lines:[{t:bestW,c:best.conf,sc:null}],refined:true});
+}
 async function refineByModel(prepped,best,boxR){
   if(!best || camLang==="eng") return best;
   const multi=(best.lines||[]).length>1;
@@ -2333,6 +2377,7 @@ async function ocrBest(img,plan,alive,onStep,depth){
     }
   }
   try{ const rb=await refineByModel(prepped,best,img.height/img.width); if(!alive()) return null; best=rb; }catch(e){}
+  try{ const rw=await wordRescue(prepped,best); if(!alive()) return null; best=rw; }catch(e){}
   // それでも読めない時は、暗い板（キーなど）の部分だけを切り出して読み直す
   if(!depth && camLang!=="eng" && !(best&&best.refined) && (!best || best.conf<60 || !best.text)){
     const pl=findPlate(img);

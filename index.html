@@ -330,10 +330,10 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 .qrow #micBtn{flex:0 0 auto;width:44px;padding:0;margin:0;display:flex;align-items:center;justify-content:center}
 .qrow #micBtn[hidden]{display:none}
 .qwrap{position:relative;flex:1;min-width:0;display:flex}
-.qwrap #q{flex:1;padding-right:44px}
-.qwrap #q::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
-#qClear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:0;margin:0;border:none;border-radius:50%;background:#e3e8ea;color:#fff;font-size:1.1rem;font-weight:700;line-height:34px;text-align:center;cursor:pointer;transition:background .2s}
-#qClear.on{background:var(--accent);color:var(--accentInk)}
+.qwrap input{flex:1;min-width:0;padding-right:46px}
+.qwrap input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.qwrap .xclr{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:0;margin:0;border:none;border-radius:50%;background:#e3e8ea;color:#fff;font-size:1.1rem;font-weight:700;line-height:34px;text-align:center;cursor:pointer;transition:background .2s}
+.qwrap .xclr.on{background:var(--accent);color:var(--accentInk)}
 .qrow #micBtn.on{background:#c62828;color:#fff;border-color:#c62828;animation:micPulse 1s ease-in-out infinite}
 @keyframes micPulse{50%{transform:scale(1.08)}}
 .voicealt{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 0;font-size:.95rem;color:var(--sub)}
@@ -404,7 +404,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
   </section>
 
   <section id="p-read" hidden>
-    <div class="qrow"><span class="qwrap"><input type="search" id="q" placeholder="読み・漢字" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="kana" enterkeyhint="search"><button type="button" id="qClear" aria-label="消す">✕</button></span><button class="btn" id="micBtn" type="button" aria-label="声で入力" hidden><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" fill="currentColor"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn primary" id="wordgo" aria-label="熟語・言葉で探す">探す</button></div><div id="voiceAlt" class="voicealt" hidden></div>
+    <div class="qrow"><span class="qwrap"><input type="search" id="q" placeholder="読み・漢字" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="kana" enterkeyhint="search"><button type="button" class="xclr" id="qClear" aria-label="消す">✕</button></span><button class="btn" id="micBtn" type="button" aria-label="声で入力" hidden><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" fill="currentColor"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn primary" id="wordgo" aria-label="熟語・言葉で探す">探す</button></div><div id="voiceAlt" class="voicealt" hidden></div>
     <div class="meta" id="rmeta"></div>
     <div id="medWrap"></div>
     <div id="wordsWrap"></div>
@@ -432,7 +432,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
   </section>
 
   <section id="p-eng" hidden>
-    <input type="text" id="eq" placeholder="英語か日本語（例：apple）" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <span class="qwrap"><input type="text" id="eq" placeholder="英語か日本語（例：apple）" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" class="xclr" aria-label="消す">✕</button></span>
     <div class="meta" id="emeta"></div>
     <div id="eres"></div>
   </section>
@@ -440,7 +440,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
   <section id="p-kot" hidden>
     <div class="kmodes"><button type="button" id="kmKot" aria-pressed="true">ことわざ</button><button type="button" id="kmYoji" aria-pressed="false">四字熟語</button></div>
     <div class="krows" id="krows"></div>
-    <input type="text" id="kq" placeholder="言葉で探す（例：ねこ、猫）" autocomplete="off" spellcheck="false" style="margin-top:10px">
+    <span class="qwrap" style="margin-top:10px"><input type="text" id="kq" placeholder="言葉で探す（例：ねこ、猫）" autocomplete="off" spellcheck="false"><button type="button" class="xclr" aria-label="消す">✕</button></span>
     <div class="meta" id="kmeta"></div>
     <div class="klist" id="klist"></div>
   </section>
@@ -473,7 +473,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（95）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：2026-11-20（96）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1104,8 +1104,19 @@ function searchSingle(){
 }
 q.addEventListener("input",searchSingle);
 /* v95：クリアボタン。入力と結果をまとめて消して、すぐ次を入力できるようにする */
-document.getElementById("qClear").onclick=()=>{ q.value=""; q.dispatchEvent(new Event("input",{bubbles:true})); ["rmeta","medWrap","wordsWrap","singleWrap","placeWrap"].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML="";}); q.focus(); };
-q.addEventListener("input",()=>{ document.getElementById("qClear").classList.toggle("on",!!q.value); });
+/* v95〜96：入力枠の右端の×。押すと文字と結果をまとめて消す。文字が入ると×が濃い色になる（よみ・英語・ことわざの3か所） */
+function syncX(){ document.querySelectorAll(".qwrap").forEach(w=>{ const i=w.querySelector("input"), x=w.querySelector(".xclr"); if(i&&x) x.classList.toggle("on",!!i.value); }); }
+document.querySelectorAll(".qwrap").forEach(w=>{
+  const i=w.querySelector("input"), x=w.querySelector(".xclr"); if(!i||!x) return;
+  i.addEventListener("input",syncX);
+  x.addEventListener("click",()=>{
+    i.value=""; i.dispatchEvent(new Event("input",{bubbles:true}));
+    if(i.id==="q") ["rmeta","medWrap","wordsWrap","singleWrap","placeWrap"].forEach(id=>{const e=document.getElementById(id); if(e) e.innerHTML="";});
+    if(i.id==="eq"){ const r=document.getElementById("eres"); if(r) r.innerHTML=""; }
+    syncX(); i.focus();
+  });
+});
+document.addEventListener("click",()=>setTimeout(syncX,0),true);
 document.getElementById("pasteGo").onclick=async()=>{
   showTab("read");
   let txt="";

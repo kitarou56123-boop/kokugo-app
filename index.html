@@ -46,6 +46,14 @@ h1{font-family:var(--serif);font-weight:700;font-size:1.35rem;margin:6px 0 12px;
 .tabs button{min-width:0;border:1px solid var(--edge);background:var(--soft);color:var(--sub);font:inherit;font-size:.8rem;letter-spacing:-.02em;white-space:nowrap;font-weight:600;padding:5px 0;border-radius:8px;cursor:pointer}
 .tabs button.two{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;padding:3px 0}
 .tabs button.two small{font-size:.68rem;font-weight:600;opacity:.85}
+/* v1.1：よく使う3つを大きく。英語・ことわざ・魚偏は「その他」にしまう */
+.tabs{grid-template-columns:1fr 1fr 1fr .62fr}
+.tabs #t-write,.tabs #t-read,.tabs #t-cam{font-size:1.02rem;padding:11px 0;border-radius:10px}
+.tabs #t-more{font-size:.85rem;padding:11px 0;border-radius:10px;background:transparent!important;box-shadow:none!important;border:1px dashed var(--edge)!important;color:var(--sub)}
+.tabs #t-more.on{background:var(--accent)!important;color:var(--accentInk)!important;border:1px solid var(--accent)!important}
+.tabs #t-eng,.tabs #t-kot,.tabs #t-fish{display:none;font-size:.8rem;padding:6px 0}
+.tabs.open #t-eng,.tabs.open #t-fish{display:block}
+.tabs.open #t-kot{display:flex}
 .tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);border-color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .pad{position:relative;width:100%;aspect-ratio:1;background:var(--surface);border:2px solid var(--ink);border-radius:4px;touch-action:none;overflow:hidden}
 .pad svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -362,6 +370,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
     <button role="tab" id="t-write" aria-selected="true">手で書く</button>
     <button role="tab" id="t-read" aria-selected="false">よみで探す</button>
     <button role="tab" id="t-cam" aria-selected="false">カメラ</button>
+    <button type="button" id="t-more" class="more" aria-expanded="false">その他 ▾</button>
     <button role="tab" id="t-eng" aria-selected="false">英語の辞書</button>
     <button role="tab" id="t-kot" aria-selected="false" class="two"><span>ことわざ</span><small>四字熟語</small></button>
     <button role="tab" id="t-fish" aria-selected="false">魚偏</button>
@@ -473,7 +482,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">版：1.0（2026-11-20）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">版：1.1（2026-11-21）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -592,6 +601,21 @@ function showTab(n){
   document.body.classList.toggle("fishbg",n==="fish");
 }
 tabs.fish.onclick=()=>showTab("fish"); tabs.eng.onclick=()=>showTab("eng");
+/* v1.1：「その他」ボタン。英語・ことわざ・魚偏を開いたり閉じたりする。
+   閉じている時にその3つのどれかを使っていたら、ボタンにその名前を出して色を付ける */
+const moreBtn=document.getElementById("t-more"), tabBox=document.querySelector(".tabs");
+const MORE_NAME={eng:"英語",kot:"ことわざ",fish:"魚偏"};
+function syncMore(){
+  const open=tabBox.classList.contains("open");
+  const act=Object.keys(MORE_NAME).find(k=>tabs[k].getAttribute("aria-selected")==="true");
+  moreBtn.setAttribute("aria-expanded",open);
+  moreBtn.textContent=open?"閉じる ▴":((act?MORE_NAME[act]:"その他")+" ▾");
+  moreBtn.classList.toggle("on",!open&&!!act);
+}
+moreBtn.onclick=()=>{ tabBox.classList.toggle("open"); syncMore(); };
+for(const k of Object.keys(MORE_NAME)) tabs[k].addEventListener("click",()=>setTimeout(syncMore,0));
+for(const k of ["write","read","cam"]) tabs[k].addEventListener("click",()=>{ tabBox.classList.remove("open"); setTimeout(syncMore,0); });
+{ const _st=showTab; showTab=function(n){ _st(n); try{ if(MORE_NAME[n]&&!tabBox.classList.contains("open")) tabBox.classList.add("open"); syncMore(); }catch(e){} }; }
 tabs.write.onclick=()=>showTab("write"); tabs.read.onclick=()=>showTab("read"); tabs.kot.onclick=()=>showTab("kot"); tabs.cam.onclick=()=>showTab("cam");
 
 /* AI */

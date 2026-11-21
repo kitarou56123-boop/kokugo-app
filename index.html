@@ -479,7 +479,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.4（2026-11-21）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.5（2026-11-21）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -2565,7 +2565,7 @@ async function runSelectionOCR(){
   bg.drawImage(srcImg,hx,hy,hw,hh,0,0,big.width,big.height);
   if(tmp&&tmp.close) tmp.close();
   // 囲みの形から、縦書き・横書き・1文字を見分けて読み方を選ぶ
-  runOCRPlan(fitTextSize(big),selPlan(ch/cw));
+  runOCRPlan(fitTextSize(cleanEdges(big)),selPlan(ch/cw));
 }
 /* v80：字の大きさを読み取りに一番向いた大きさ（1字が約32ドット）にそろえる。
    大きすぎても小さすぎても読み間違いが増える（試験で正解率が5割→8割台に上がった） */
@@ -2595,6 +2595,46 @@ function textSizeOf(src){
   // 大きいかたまり（一番大きいものの4割以上）の真ん中の大きさ＝字の大きさ。細かい点々に引っぱられない
   const top=sizes.filter(x=>x>=sizes[0]*0.4);
   return top[Math.floor(top.length/2)]/k;
+}
+/* ver.1.5：囲みのふちに触れている「よけいな物」を、読む前に消す。
+   ・表の罫線や囲みの線（細長い線）
+   ・となりの字の切れ端（字の大きさの6割より小さいかけら）
+   字と同じくらいの大きさのものは、調べたい字かもしれないので消さない */
+function cleanEdges(src){
+  try{
+    const W=src.width, H=src.height; if(W<8||H<8) return src;
+    const cs=textSizeOf(src); if(!cs) return src;
+    const g=src.getContext("2d",{willReadFrequently:true}), img=g.getImageData(0,0,W,H), d=img.data, n=W*H;
+    const gray=new Uint8Array(n), hs=new Float64Array(256);
+    for(let i=0,j=0;j<n;i+=4,j++){ const v=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]); gray[j]=v; hs[v]++; }
+    let mu=0; for(let t=0;t<256;t++) mu+=t*hs[t]/n;
+    let w0=0,m0=0,best=-1,th=128; for(let t=0;t<256;t++){ w0+=hs[t]/n; m0+=t*hs[t]/n; if(w0<=0||w0>=1) continue; const b=(mu*w0-m0)**2/(w0*(1-w0)); if(b>best){ best=b; th=t; } }
+    let dark=0; for(let j=0;j<n;j++) if(gray[j]<=th) dark++;
+    const inkDark=dark<=n/2;
+    const ink=new Uint8Array(n); let inkN=0; for(let j=0;j<n;j++) if((gray[j]<=th)===inkDark){ ink[j]=1; inkN++; }
+    const lab=new Int32Array(n), st=new Int32Array(n), rm=new Uint8Array(n); let id=0, rmN=0;
+    const comp=new Int32Array(n);
+    const touch=p=>{ const x=p%W, y=(p-x)/W; return x===0||y===0||x===W-1||y===H-1; };
+    const starts=[]; for(let x=0;x<W;x++){ starts.push(x,(H-1)*W+x); } for(let y=1;y<H-1;y++){ starts.push(y*W,y*W+W-1); }
+    for(const p of starts){
+      if(!ink[p]||lab[p]) continue;
+      id++; let sp=0, cn=0, x0=W,y0=H,x1=0,y1=0; st[sp++]=p; lab[p]=id;
+      while(sp){ const q=st[--sp], x=q%W, y=(q-x)/W; comp[cn++]=q; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const nx=x+dx, ny=y+dy; if(nx<0||ny<0||nx>=W||ny>=H) continue; const r=ny*W+nx; if(ink[r]&&!lab[r]){ lab[r]=id; st[sp++]=r; } } }
+      const bw=x1-x0+1, bh=y1-y0+1, fill=cn/(bw*bh);
+      const line=(bw>W*.5&&bh<H*.15)||(bh>H*.5&&bw<W*.15)||(fill<.12&&Math.max(bw,bh)>cs*1.2);
+      const frag=Math.max(bw,bh)<cs*.6;
+      if(line||frag){ for(let k=0;k<cn;k++) rm[comp[k]]=1; rmN+=cn; }
+    }
+    if(!rmN || rmN>inkN*.8) return src;
+    // 消した所は、まわりの地の色（字でない所の真ん中の明るさ）でぬる
+    const bgH=new Uint32Array(256); let bgN=0; for(let j=0;j<n;j++) if(!ink[j]){ bgH[gray[j]]++; bgN++; }
+    let acc=0, bgv=255; for(let t=0;t<256;t++){ acc+=bgH[t]; if(acc>=bgN/2){ bgv=t; break; } }
+    const o=document.createElement("canvas"); o.width=W; o.height=H; const og=o.getContext("2d"); const oi=og.createImageData(W,H), od=oi.data;
+    for(let i=0,j=0;j<n;i+=4,j++){ const v=rm[j]?bgv:gray[j]; od[i]=od[i+1]=od[i+2]=v; od[i+3]=255; }
+    og.putImageData(oi,0,0);
+    return o;
+  }catch(e){ return src; }
 }
 function fitTextSize(src){
   let size=0; try{ size=textSizeOf(src); }catch(e){ size=0; }

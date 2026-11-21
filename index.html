@@ -399,7 +399,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
     <div class="meta" id="wmeta"></div>
     <div class="grid" id="wres"></div>
     <div id="wordOut" hidden></div>
-    <div class="pasterow"><span>📋 コピペ</span><button type="button" id="pasteGo">コピペする</button></div>
+    <div class="pasterow"><button type="button" id="pasteGo">📋 コピペ</button></div>
   </div>
     <div id="partsBox" hidden>
       
@@ -477,12 +477,12 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 .wquit{margin-left:8px;padding:4px 14px;border-radius:999px;border:1.5px solid var(--accent);background:var(--surface);color:var(--accent);font:inherit;font-weight:700;cursor:pointer}
 .photo{position:relative}
 .phint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.6);color:#fff;padding:8px 16px;border-radius:999px;font-weight:700;pointer-events:none;white-space:nowrap;line-height:1.3}
-.pasterow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:8px 8px 8px 14px;border:1.5px dashed var(--accent);background:var(--surface);border-radius:12px;color:var(--accent);font-weight:700}
-.pasterow button{padding:8px 18px;border:0;border-radius:999px;background:var(--accent);color:#fff;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.pasterow{display:flex;justify-content:flex-end;margin-top:8px}
+.pasterow button{padding:10px 20px;border:0;border-radius:999px;background:var(--accent);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;white-space:nowrap}
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.2（2026-11-21）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.3（2026-11-21）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -719,7 +719,8 @@ function wordPickInfo(k){
   line.textContent=`${k}：${parts.join("／")}${m?"　"+m.text:""}`;
   const more=document.createElement("button"); more.type="button"; more.className="wmore"; more.textContent="くわしく";
   more.onclick=()=>openSheet(k);
-  wmeta.append(line," ",more);
+  const row=document.createElement("div"); row.className="wline"; row.append(line,more);
+  wmeta.appendChild(row);
   if(wordChars.length>=2){ const n=document.createElement("div"); n.textContent="続けて書くと言葉になります。「この言葉を調べる」で言葉を調べられます。"; wmeta.appendChild(n); }
 }
 function wordClear(){
@@ -3999,7 +4000,12 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 .wgo:disabled{opacity:.35;cursor:default}
 .wdel{font-size:.9rem!important;color:#b00;grid-column:span 2;white-space:nowrap}
 .wsee{color:#1d5f6b!important}
-.wpred-t{margin-top:4px;color:#1d5f6b;font-weight:bold}
+.wpred-t{margin-top:2px;color:#1d5f6b;font-weight:bold}
+/* ver.1.3：「くわしく」を説明の横に。予測の見出しと候補の間を詰める */
+#wmeta .wline{display:flex;align-items:center;gap:6px}
+#wmeta .wline>span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#wmeta .wline .wmore{flex:none;margin-left:0;padding:5px 10px;font-size:.78rem}
+#wres{margin-top:4px}
 .wpred{background:#eef6f7!important}
 .wmore{margin-left:6px;padding:2px 10px;border:1px solid #1d5f6b;border-radius:14px;background:#fff;color:#1d5f6b;font-size:.85rem}
 @media (max-width:340px){.wslot{width:44px;flex-basis:44px}.wslot span{font-size:24px}}
@@ -4030,7 +4036,7 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 <script>
 (()=>{
 const H={
- "t-write":["手で書く",["枠に漢字を1字書くと、下に候補が出ます。","候補を押すと上の欄にたまります。続けて次の字を書くと、4字までの言葉をまとめて調べられます（「この言葉を調べる」）。","上の欄の字（✎印）を押すと、選び直し・くわしく見る・消すができます。","書けない難しい字は、コピーしてから「コピペする」を押すと、「よみで探す」に貼り付けて調べられます。","「部品で探す」では、字の中に見える部品を押していくと候補が絞られます。"]],
+ "t-write":["手で書く",["枠に漢字を1字書くと、下に候補が出ます。","候補を押すと上の欄にたまります。続けて次の字を書くと、4字までの言葉をまとめて調べられます（「この言葉を調べる」）。","上の欄の字（✎印）を押すと、選び直し・くわしく見る・消すができます。","書けない難しい字は、コピーしてから「コピペ」を押すと、「よみで探す」に貼り付けて調べられます。","「部品で探す」では、字の中に見える部品を押していくと候補が絞られます。"]],
  "t-read":["よみで探す",["1文字の漢字は、入力するとすぐ下に出ます。","地名は、読みがはっきり地名と分かるとき（例：ながさき）だけ出ます。","熟語や言葉は「探す」かキーボードの決定で探します。","難しい漢字は、コピーして貼り付けても調べられます。"]],
  "t-cam":["カメラ",["読めない字を大きく、はっきり写すほど正確に読めます。","読みたい言葉を指でなぞって四角く囲み、「囲んだ所を読む」を押します。","写真を動かすときは「✋ 動かす」を押してから指で動かします。2本指で広げると拡大できます。","英語を読むときは、上の「英語を読む」に切り替えます。"]],
  "t-eng":["英語の辞書",["英語を入れると日本語の意味（英和）、日本語を入れると英語（和英）が出ます。","医学用語も調べられます。","🔊を押すと英語の発音が聞けます。"]],

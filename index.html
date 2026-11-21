@@ -481,7 +481,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.9（2026-11-21）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.10（2026-11-21）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -1128,7 +1128,7 @@ function searchSingle(){
   const list=(IDX.get(s)||[]).slice().sort((a,b)=>DB.get(a).fq-DB.get(b).fq);
   const t=document.createElement("p"); t.className="section-t"; t.textContent=list.length?`「${s}」と読む漢字（${list.length}字・よく使う順）`:`「${s}」と1文字で読む漢字は見つかりません`;
   singleWrap.appendChild(t);
-  if(!list.length){ if(document.querySelector("#wordsWrap .reqlink")) return; const a=document.createElement("a"); a.className="reqlink"; a.href="https://docs.google.com/forms/d/e/1FAIpQLSfz4t4h0UfDlg1K5QwOX7UMt8j8BWSzXr2-k0NrNnsQX-EJhw/viewform"; a.target="_blank"; a.rel="noopener"; a.textContent="📮 この字が出ない時は知らせる"; singleWrap.appendChild(a); return; }
+  if(!list.length){ t.classList.add("nf"); if(document.querySelector("#wordsWrap .reqlink")){ t.remove(); return; } const a=document.createElement("a"); a.className="reqlink"; a.href="https://docs.google.com/forms/d/e/1FAIpQLSfz4t4h0UfDlg1K5QwOX7UMt8j8BWSzXr2-k0NrNnsQX-EJhw/viewform"; a.target="_blank"; a.rel="noopener"; a.textContent="📮 この字が出ない時は知らせる"; singleWrap.appendChild(a); return; }
   const g=document.createElement("div"); g.className="grid"; list.slice(0,80).forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g);
 }
 q.addEventListener("input",searchSingle);
@@ -2762,7 +2762,7 @@ wordBtn.onclick=async()=>{
       if(parts.length||en.length) own={parts,en};
     }
     const kots=[]; try{ if(hasKanji) for(const x of (Array.isArray(KOT)?KOT:[])){ if(x&&x.t&&x.t.includes(raw)) kots.push(x); } }catch(e){}
-    if(!arr.length && !own && !kots.length){ rmeta.textContent="この言葉は端末内の辞書にありません。下の漢字を押すと、1字ずつの読み方と意味が見られます。"; document.querySelectorAll("#singleWrap .reqlink").forEach(x=>x.remove()); wordsWrap.appendChild(reqLink("📮 この言葉が出ない時は知らせる")); return; }
+    if(!arr.length && !own && !kots.length){ rmeta.textContent="この言葉は端末内の辞書にありません。下の漢字を押すと、1字ずつの読み方と意味が見られます。"; document.querySelectorAll("#singleWrap .reqlink,#singleWrap .nf").forEach(x=>x.remove()); wordsWrap.appendChild(reqLink("📮 この言葉が出ない時は知らせる")); return; }
     rmeta.textContent="";
     if(own){
       const t=document.createElement("p"); t.className="section-t"; t.textContent=`「${raw}」`; wordsWrap.appendChild(t);

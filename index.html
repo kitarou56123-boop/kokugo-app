@@ -380,7 +380,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
     <div class="kmodes" id="wmodes"><button type="button" id="wmHand" aria-pressed="true">手で書く</button><button type="button" id="wmParts" aria-pressed="false">部品で探す</button></div>
     <div id="handBox">
     <div id="wordUI">
-            <div class="wbar"><div class="wslots" id="wslots"></div><div class="wbtns"><button type="button" class="wgo" id="wgo" disabled>この言葉を調べる</button><button type="button" class="wclr" id="wclr">クリア</button></div></div>
+            <div class="wbar"><div class="wslots" id="wslots"></div><div class="wbtns"><button type="button" class="wgo" id="wgo" disabled>この言葉を調べる</button><button type="button" class="wclr" id="wclr" aria-label="クリア">✕</button></div></div>
     </div>
     <div class="padrow">
     <div class="pad" id="pad">
@@ -482,7 +482,7 @@ window.addEventListener("load",()=>setTimeout(()=>{ (typeof loadHandModel==="fun
 </style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.1（2026-11-21）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.2（2026-11-21）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -642,9 +642,11 @@ document.getElementById("undo").onclick=()=>{ strokes.pop(); redraw(); schedule(
 document.getElementById("clear").onclick=()=>{ clearTimeout(recTimer); recId++; strokes=[]; redraw(); document.getElementById("wres").innerHTML=""; document.getElementById("wmeta").textContent=""; if(wordMode&&wordEdit>=0){ wordEdit=-1; renderWord(); } };
 size();
 
+/* v103：書く枠が正方形でなくても字がつぶれないように、枠の縦横比のまま描く */
+function padWH(S){ const r=pad.getBoundingClientRect(); if(!r.width||!r.height) return [S,S]; const k=S/Math.max(r.width,r.height); return [r.width*k,r.height*k]; }
 function exportImg(){
   const S=256, o=document.createElement("canvas"); o.width=S; o.height=S; const c=o.getContext("2d");
-  c.fillStyle="#fff"; c.fillRect(0,0,S,S); drawOn(c,S,S,"#000",S*0.03);
+  c.fillStyle="#fff"; c.fillRect(0,0,S,S); const [pw,ph]=padWH(S); drawOn(c,pw,ph,"#000",S*0.03);
   return new Promise(r=>o.toBlob(r,"image/png"));
 }
 function candBtn(k){ const b=document.createElement("button"); b.className="cand"; b.textContent=k; b.onclick=()=>{ if(wordMode && b.closest("#wres")){ wordPick(k); return; } openSheet(k); }; return b; }
@@ -743,6 +745,7 @@ function renderWord(){
   });
   if(wordChars.length<WORD_MAX && wordEdit<0){ const d=document.createElement("div"); d.className="wslot now"; d.innerHTML="書いて<br>いる字"; box.appendChild(d); }
   document.getElementById("wgo").disabled=wordChars.length<2;
+  document.getElementById("wclr").classList.toggle("on",wordChars.length>0);
 }
 function wordSlot(i){
   if(wordEdit===i){ wordEdit=-1; wres.innerHTML=""; wmeta.textContent=""; renderWord(); return; }
@@ -4003,6 +4006,25 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 .wbtns{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
 .wclr{background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:3px 6px;font-weight:700;font-size:12.5px;cursor:pointer}
 #wordOut{margin-top:12px}
+/* v103：上の欄を細く。クリアは他と同じ丸い×にして「この言葉を調べる」の横へ。候補が1画面に収まるようにしたうえで、書く枠を縦に少し伸ばす */
+.wbar{padding:4px 6px;margin:0 0 6px;gap:6px}
+.wslots{gap:4px}
+.wslot{width:44px;flex-basis:44px;height:42px;border-radius:8px}
+.wslot span{font-size:22px;line-height:1}
+.wslot small{font-size:9px;line-height:1.1}
+.wslot .pen{font-size:9px;top:0;right:2px}
+.wslot.now{font-size:11px;line-height:1.2}
+.wbtns{flex-direction:row;align-items:center;gap:6px}
+.wgo{height:42px;width:74px;padding:2px 4px;font-size:12px}
+.wclr{width:34px;height:34px;flex:none;padding:0;border:none;border-radius:50%;background:#e3e8ea;color:#fff;font-size:1.1rem;font-weight:700;line-height:34px;text-align:center;transition:background .2s}
+.wclr.on{background:var(--accent);color:var(--accentInk)}
+@media (max-width:340px){.wslot{width:40px;flex-basis:40px}.wslot span{font-size:20px}}
+@media (max-width:600px){
+  .padrow .pad{aspect-ratio:1/1.03}
+  /* 「手で書く／部品で探す」を低くして、その分だけ書く枠を縦に伸ばす */
+  #wmodes{margin-bottom:5px;gap:6px}
+  #wmodes button{padding:2px 0;font-size:.95rem;border-radius:9px}
+}
 </style>
 
 <script>

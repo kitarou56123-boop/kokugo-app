@@ -487,8 +487,8 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.16（2026-11-22）</p>
-  <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.17（2026-11-22）</p>
+  <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
 <div class="sheet-bg" id="sbg"></div>
@@ -502,7 +502,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
   <div class="big" id="sk"></div>
   <dl id="sinfo"></dl>
   <div id="sfish"></div>
-  <div class="row"><button class="btn" id="zoomBtn">大きく見る</button><button class="btn primary" id="meanBtn" style="display:none">この字を使う言葉</button></div>
+  <div class="row"><button class="btn" id="zoomBtn">大きく見る</button><button class="btn primary" id="soBtn">✍ 書き順</button><button class="btn primary" id="meanBtn" style="display:none">この字を使う言葉</button></div>
   <div class="ai" id="sai" hidden></div>
 </div>
 
@@ -4161,6 +4161,78 @@ function cur(){ const t=document.querySelector('.tabs [aria-selected="true"]'); 
 document.getElementById("helpBtn").onclick=()=>{ const [t,l]=H[cur()]||H["t-write"]; document.getElementById("htitle").textContent="使い方："+t; document.getElementById("hbody").innerHTML="<ul>"+l.map(x=>"<li>"+x+"</li>").join("")+"</ul>"; sh.classList.add("open"); bg.classList.add("open"); };
 function close(){ sh.classList.remove("open"); bg.classList.remove("open"); }
 document.getElementById("hclose").onclick=close; bg.addEventListener("click",close);
+})();
+</script>
+<style>/* ver.1.17：書き順 */
+#soBtn{flex:1}
+.so{position:fixed;inset:0;z-index:60;background:var(--surface);display:none;overflow:auto}
+.so.open{display:block}
+.so .in{max-width:420px;margin:0 auto;padding:14px 16px 24px;text-align:center;position:relative}
+.so h2{margin:6px 40px 4px;font-size:1.2rem}
+.so .cnt{font-size:1rem;margin-bottom:8px}.so .cnt b{color:#d1342b;font-size:1.5rem}
+.so svg.big{width:100%;max-width:340px;aspect-ratio:1;border:2px solid var(--ink);border-radius:4px;background:#fff}
+.so .g path{fill:none;stroke:#d9dfe0;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.so .s{fill:none;stroke:#1b2228;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+.so .ctl{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:6px;margin:12px 0}
+.so .ctl button{font:inherit;font-weight:800;font-size:.95rem;border:2px solid var(--accent);border-radius:999px;padding:12px 0;background:var(--surface);color:var(--accent);cursor:pointer}
+.so .ctl button.p{background:var(--accent);color:var(--accentInk)}
+.so .grid2{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.so .m{position:relative;border:1px solid #ccd;border-radius:6px;background:#fff;padding:0;cursor:pointer}.so .m svg{width:100%;display:block}
+.so .m span{position:absolute;left:3px;top:1px;font-size:10px;color:#888}.so .m.on{border:2px solid #d1342b}
+.so .close{position:absolute;right:12px;top:10px}
+.so .msg{margin:40px 0;font-size:1rem}
+</style>
+<div class="so" id="so" role="dialog" aria-modal="true" aria-label="書き順"><div class="in">
+<button class="close" id="soClose" aria-label="閉じる">×</button>
+<h2 id="soTitle">書き順</h2><div class="cnt" id="soCnt"></div>
+<div id="soBody"></div></div></div>
+<script>
+/* ver.1.17：書き順（KanjiVGのデータ。押した時に初めて読み込む） */
+let KVG=null, KVGP=null;
+function loadKVG(){
+  if(!KVGP) KVGP=(async()=>{
+    const bin=await getData("kvg-1.bin");
+    const st=new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"));
+    const txt=await new Response(st).text();
+    const m=new Map(); for(const l of txt.split("\n")){ const i=l.indexOf("\t"); if(i>0) m.set(l.slice(0,i),l.slice(i+1)); }
+    KVG=m; return m;
+  })().catch(e=>{ KVGP=null; throw e; });
+  return KVGP;
+}
+(function(){
+  const so=document.getElementById("so"), body=document.getElementById("soBody"), cnt=document.getElementById("soCnt"), btn=document.getElementById("soBtn");
+  let S=[], cur=0, timer=null, grid=null, playB=null;
+  function syncBtn(){ if(!curK) return; if(KVG) btn.style.display=KVG.has(curK)?"":"none"; else btn.style.display=""; }
+  const _os=openSheet; openSheet=function(k){ _os(k); syncBtn(); loadKVG().then(syncBtn).catch(()=>{}); };
+  function mark(){ cnt.innerHTML=`<b>${cur}</b> 画目 ／ 全${S.length}画`; if(grid) [...grid.children].forEach((b,i)=>b.classList.toggle("on",i===cur-1)); }
+  function show(k){ cur=k; S.forEach((p,i)=>{ p.style.transition="none"; p.style.strokeDashoffset=i<k?0:p.dataset.L; p.style.stroke=(i===k-1)?"#d1342b":"#1b2228"; }); mark(); }
+  function stop(){ clearTimeout(timer); timer=null; if(playB) playB.textContent="▶ 自動で書く"; }
+  function drawOne(i,done){ const p=S[i]; S.forEach((q,j)=>{ if(j<i) q.style.stroke="#1b2228"; }); p.style.stroke="#d1342b"; p.style.transition="none"; p.style.strokeDashoffset=p.dataset.L; p.getBoundingClientRect();
+    const ms=Math.max(350,+p.dataset.L*12); p.style.transition="stroke-dashoffset "+ms+"ms linear"; p.style.strokeDashoffset=0; cur=i+1; mark(); timer=setTimeout(done,ms+250); }
+  function play(){ if(timer){ stop(); return; } if(cur>=S.length) show(0); playB.textContent="■ 止める";
+    const step=()=>{ if(cur>=S.length){ stop(); S.forEach(q=>q.style.stroke="#1b2228"); return; } drawOne(cur,step); }; step(); }
+  async function open(){
+    if(!curK) return; const k=curK; stop(); S=[]; grid=null;
+    document.getElementById("soTitle").textContent=`「${k}」の書き順`; cnt.textContent=""; body.innerHTML='<p class="msg">書き順を読み込んでいます…</p>';
+    so.classList.add("open");
+    let d; try{ await loadKVG(); d=KVG.get(k); }catch(e){ body.innerHTML='<p class="msg">書き順を読み込めませんでした。電波のある所でもう一度押してください。</p>'; return; }
+    if(!d){ body.innerHTML='<p class="msg">この字の書き順データは入っていません。</p>'; return; }
+    const P=d.split("|"), NS="http://www.w3.org/2000/svg";
+    body.innerHTML='<svg class="big" viewBox="0 0 109 109"><line x1="54.5" y1="0" x2="54.5" y2="109" stroke="#e7b9ae" stroke-dasharray="3 3"/><line x1="0" y1="54.5" x2="109" y2="54.5" stroke="#e7b9ae" stroke-dasharray="3 3"/><g class="g">'+P.map(x=>'<path d="'+x+'"/>').join("")+'</g>'+P.map(x=>'<path class="s" d="'+x+'"/>').join("")+'</svg>'
+      +'<div class="ctl"><button type="button" id="soPrev">◀ 1画</button><button type="button" class="p" id="soPlay">▶ 自動で書く</button><button type="button" id="soNext">1画 ▶</button></div><div class="grid2" id="soGrid"></div>';
+    S=[...body.querySelectorAll(".s")]; S.forEach(p=>{ const L=p.getTotalLength(); p.dataset.L=L; p.style.strokeDasharray=L; p.style.strokeDashoffset=L; });
+    grid=document.getElementById("soGrid"); playB=document.getElementById("soPlay");
+    P.forEach((x,i)=>{ const b=document.createElement("button"); b.type="button"; b.className="m";
+      b.innerHTML='<svg viewBox="0 0 109 109">'+P.slice(0,i+1).map((q,j)=>'<path d="'+q+'" fill="none" stroke="'+(j===i?"#d1342b":"#1b2228")+'" stroke-width="'+(j===i?5:4.5)+'" stroke-linecap="round" stroke-linejoin="round"/>').join("")+'</svg><span>'+(i+1)+'</span>';
+      b.onclick=()=>{ stop(); show(i+1); }; grid.appendChild(b); });
+    playB.onclick=play;
+    document.getElementById("soNext").onclick=()=>{ stop(); if(cur<S.length) drawOne(cur,()=>{ timer=null; }); };
+    document.getElementById("soPrev").onclick=()=>{ stop(); show(Math.max(0,cur-1)); };
+    show(0); setTimeout(()=>{ if(so.classList.contains("open")&&cur===0&&!timer) play(); },400);
+  }
+  function close(){ stop(); so.classList.remove("open"); }
+  btn.onclick=open; document.getElementById("soClose").onclick=close;
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&so.classList.contains("open")) close(); });
 })();
 </script>
 </body>

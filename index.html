@@ -487,7 +487,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.19（2026-11-22）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.20（2026-11-22）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -821,7 +821,7 @@ function wordSlot(i){
   for(const c of wordChars[i].alts){ const b=candBtn(c); if(c===wordChars[i].c) b.classList.add("old"); wres.appendChild(b); }
   const del=document.createElement("button"); del.type="button"; del.className="cand wdel"; del.textContent="この字を消す";
   del.onclick=()=>{ wordChars.splice(i,1); wordEdit=-1; wres.innerHTML=""; wmeta.textContent=""; renderWord(); };
-  const more=document.createElement("button"); more.type="button"; more.className="cand wdel wsee"; more.innerHTML='この字をくわしく<small style="display:block;font-size:.72em;margin-top:2px">読み・意味・<b style="color:#d1342b">✍書き順</b></small>';
+  const more=document.createElement("button"); more.type="button"; more.className="cand wdel wsee"; more.innerHTML='この字をくわしく<small style="display:block;font-size:.72em;margin-top:2px">読み・意味・<b>✍書き順</b></small>';
   more.onclick=()=>openSheet(wordChars[i].c);
   wres.appendChild(more);
   wres.appendChild(del);
@@ -4112,7 +4112,7 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 .wgo{background:var(--accent);color:var(--accentInk);border:0;border-radius:10px;padding:5px 6px;font-weight:700;font-size:12.5px;line-height:1.25;cursor:pointer;width:72px}
 .wgo:disabled{opacity:.35;cursor:default}
 .wdel{font-size:.9rem!important;color:#b00;grid-column:span 2;white-space:nowrap}
-.wsee{color:#1d5f6b!important}
+.wsee{color:#fff!important;background:#2f5d62!important;border-color:#2f5d62!important;font-weight:700}.wsee small,.wsee b{color:#fff!important}
 .wpred-t{margin-top:2px;color:#1d5f6b;font-weight:bold}
 /* ver.1.3：「くわしく」を説明の横に。予測の見出しと候補の間を詰める */
 #wmeta .wline{display:flex;align-items:center;gap:6px}
@@ -4120,7 +4120,7 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 #wmeta .wline .wmore{flex:none;margin-left:0;padding:5px 10px;font-size:.78rem}
 #wres{margin-top:4px}
 .wpred{background:#eef6f7!important}
-.wmore{margin-left:6px;padding:2px 10px;border:1px solid #1d5f6b;border-radius:14px;background:#fff;color:#1d5f6b;font-size:.85rem}
+.wmore{margin-left:6px;padding:2px 10px;border:1px solid #2f5d62;border-radius:14px;background:#2f5d62;color:#fff;font-size:.85rem;font-weight:700}
 @media (max-width:340px){.wslot{width:44px;flex-basis:44px}.wslot span{font-size:24px}}
 .wbtns{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
 .wclr{background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:3px 6px;font-weight:700;font-size:12.5px;cursor:pointer}

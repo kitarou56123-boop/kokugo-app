@@ -1,6 +1,6 @@
 // ガリ勉：インストールアプリ用。
 // アプリ自身のファイル（同じ場所のもの）だけを扱い、辞書や手書き認識など外部のデータには一切さわらない
-const CACHE = "gariben-v122";
+const CACHE = "gariben-v123";
 const DATA = "gariben-data";   // 辞書データ（*.bin）は名前ごとに中身が変わらないので、別の箱に取っておく
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(

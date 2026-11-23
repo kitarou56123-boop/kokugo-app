@@ -487,7 +487,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.25（2026-11-23）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.26（2026-11-23）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -602,6 +602,23 @@ const EXTRA_WORDS=[
  ["甜瓜",["めろん","まくわうり","てんか"],"メロン・マクワウリのなかま。あまい瓜。"],
  ["響尾蛇",["がらがらへび"],"ガラガラヘビ。尾をふって音を出す毒ヘビ。"],
  ["大熊猫",["じゃいあんとぱんだ"],"ジャイアントパンダ。"],
+ ["銀雀山",["ぎんじゃくざん"],"中国山東省臨沂市にある丘。1972年、ここの漢代の墓から『孫子』『孫臏兵法』などを書いた竹簡が見つかった。"],
+ ["銀雀山漢墓",["ぎんじゃくざんかんぼ"],"山東省臨沂の銀雀山で見つかった、前漢時代の墓。"],
+ ["銀雀山漢墓竹簡",["ぎんじゃくざんかんぼちくかん"],"銀雀山漢墓から出た竹簡（竹のふだに書いた書物）。『孫子』の古い本文が見つかった。"],
+ ["臨沂",["りんぎ"],"中国山東省の地名（臨沂市）。銀雀山がある。"],
+ ["臨沂県",["りんぎけん"],"中国山東省にあった県。今の臨沂市。"],
+ ["孫子",["そんし","まごこ"],"そんし：中国の兵法書『孫子』、またはその作者とされる孫武の敬称。まごこ：孫と子。子孫。"],
+ ["孫武",["そんぶ"],"春秋時代の兵法家。『孫子』の作者とされる。呉王闔閭に仕えた。"],
+ ["孫臏",["そんぴん"],"戦国時代の兵法家。孫武の子孫とされ、『孫臏兵法』を残した。"],
+ ["孫臏兵法",["そんぴんへいほう"],"孫臏の兵法書。銀雀山漢墓から竹簡が見つかった。"],
+ ["闔閭",["こうりょ"],"春秋時代の呉の王。孫武を用いたとされる。"],
+ ["伍子胥",["ごししょ"],"春秋時代の楚の人。呉に仕え、闔閭を助けた。"],
+ ["夫差",["ふさ"],"春秋時代の呉の王。闔閭の子。越王勾践と争った。"],
+ ["勾践",["こうせん"],"春秋時代の越の王。呉王夫差と争った（臥薪嘗胆）。"],
+ ["句践",["こうせん"],"勾践と同じ。越の王。"],
+ ["対魯",["たいろ"],"魯の国に対する（戦い・政策）。"],
+ ["対斉",["たいせい"],"斉の国に対する（戦い・政策）。"],
+ ["竹簡",["ちくかん"],"竹のふだ。紙のない時代に文字を書いた。"],
  ["苫鵡",["とまむ"],"北海道勇払郡占冠村の地名「トマム」を漢字で書いたもの。"],
  ["α",["あるふぁ"],"ギリシャ文字の1番目（小文字）。大文字はΑ。"],["β",["べーた"],"ギリシャ文字の2番目（小文字）。大文字はΒ。"],
  ["γ",["がんま"],"ギリシャ文字の3番目（小文字）。大文字はΓ。"],["Γ",["がんま"],"ギリシャ文字の3番目（大文字）。小文字はγ。"],
@@ -1887,6 +1904,22 @@ onmessage=(ev)=>{ const d=ev.data; let out;
   catch(e){ out=d.texts.map(()=>[]); }
   postMessage({type:"res",id:d.id,out}); };
 `;
+/* ver.1.26：辞書にない長い言葉（臨沂県銀雀山など）の読みの目安。知っている言葉に区切れる所は区切り、残りは1字ずつの音読みでつなぐ */
+function guessReading(raw){
+  const cs=[...raw]; const n=cs.length; if(n<2||n>20||!cs.every(c=>/\p{Script=Han}|々/u.test(c))) return null;
+  const ex=new Map(); try{ for(const [w,rs] of EXTRA_WORDS) ex.set(w,rs[0]); }catch(e){}
+  const known=w=>{ if(ex.has(w)) return ex.get(w); try{ const r=dictReading(w); if(r) return toHira(r); }catch(e){} return ""; };
+  const one=c=>{ if(c==="々") return null; const e=DB.get(c); if(!e) return null; const r=(e.on[0]||e.kun[0]||"").replace(/[.\-].*$/,""); return r?toHira(r):null; };
+  // 少ない区切りで読める組み合わせを探す（1字ずつの読みは「目安」なので重みを重くする）
+  const best=new Array(n+1).fill(null); best[0]={cost:0,parts:[]};
+  for(let i=0;i<n;i++){ if(!best[i]) continue;
+    for(let j=Math.min(n,i+8);j>i;j--){ const w=cs.slice(i,j).join("");
+      let r=null, g=false; if(j-i>=2){ r=known(w); } if(!r && j-i===1){ r=one(w); g=true; if(!r && w==="々" && best[i].parts.length){ r=best[i].parts[best[i].parts.length-1].r.slice(-2); } }
+      if(!r) continue; const cost=best[i].cost+(g?3:1);
+      if(!best[j]||cost<best[j].cost) best[j]={cost,parts:[...best[i].parts,{w,r,g}]}; } }
+  const b=best[n]; if(!b) return null;
+  return {r:b.parts.map(x=>x.r).join(""), guess:b.parts.some(x=>x.g)};
+}
 // 常用・人名用など、よく使う漢字の一覧（1字ちがいの候補探しに使う）
 let KLIST=null;
 function KANJI_LIST(){ if(!KLIST){ KLIST=[]; for(const line of RAW.split("\n")){ const f=line.split("\t"); if(f[0]&&(+f[2]>0&&+f[2]<=10)) KLIST.push(f[0]); } } return KLIST; }
@@ -2871,6 +2904,9 @@ wordBtn.onclick=async()=>{
       const d=document.createElement("div"); d.className="word"; d.style.flexWrap="wrap"; d.style.display="flex";
       const info=document.createElement("div"); info.style.flexBasis="100%"; info.style.lineHeight="1.7";
       if(own.en.length){ const p=document.createElement("div"); p.innerHTML="<span style=\"font-weight:700;font-size:.85em;color:var(--sub)\">英語</span>　"; p.appendChild(document.createTextNode(own.en.join("、"))); info.appendChild(p); }
+      { const g=guessReading(raw); if(g){ const p=document.createElement("div"); p.innerHTML="<span style=\"font-weight:700;font-size:.85em;color:var(--sub)\">読みの目安</span>　"; const r=document.createElement("span"); r.style.fontSize="1.15em"; r.style.fontWeight="700"; r.textContent=g.r; p.appendChild(r);
+        if(g.guess){ const n2=document.createElement("div"); n2.style.fontSize=".8em"; n2.style.color="var(--sub)"; n2.textContent="（辞書にない部分は、1字ずつの音読みをつないでいます。にごる・つまるなどは実際と違うことがあります）"; p.appendChild(n2); }
+        info.appendChild(p); } }
       if(own.parts.length){ const p=document.createElement("div"); p.innerHTML="<span style=\"font-weight:700;font-size:.85em;color:var(--sub)\">一字ずつの意味</span>"; for(const x of own.parts){ const l=document.createElement("div"); l.textContent=x; p.appendChild(l); } info.appendChild(p); }
       const note=document.createElement("div"); note.style.fontSize=".85em"; note.style.color="var(--sub)"; note.textContent="※この言葉そのものの国語辞典の説明は入っていません。くわしくは「詳しく見る」で調べられます。"; info.appendChild(note);
       d.append(info,charBtns(raw),moreLink(raw)); box.appendChild(d);

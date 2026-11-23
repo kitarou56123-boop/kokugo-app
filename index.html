@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.38（2026-11-24）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.39（2026-11-24）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -3600,14 +3600,25 @@ function khead(r){ return r.normalize("NFD")[0]; }
 let kRow="あ", kList=[], kIdx=0;
 const krows=document.getElementById("krows"), klist=document.getElementById("klist"), kmeta=document.getElementById("kmeta"), kq=document.getElementById("kq");
 const ksheet=document.getElementById("ksheet");
+/* ver.1.39：同じ行をもう一度押すと、あ→い→う→え→お と次の字の見出しへ飛ぶ（ボタンの字も変わる） */
+let kSubRow="", kSubCh="";
+function kJump(chars,start){
+  const heads=[...klist.querySelectorAll(".khead")].filter(d=>chars.includes(d.dataset.h));
+  if(!heads.length) return null;
+  let i=0; if(start){ const cur=chars.indexOf(start); const nx=heads.find(d=>chars.indexOf(d.dataset.h)>cur); i=nx?heads.indexOf(nx):0; }
+  const hd=heads[i]; const y=hd.getBoundingClientRect().top+window.scrollY-krows.offsetHeight-6; window.scrollTo({top:y,behavior:"smooth"}); return hd.dataset.h;
+}
+function kLabel(){ for(const b of krows.children){ const on=b.dataset.row===kSubRow&&kSubCh; b.textContent=on?kSubCh:b.dataset.row; b.classList.toggle("ksub",!!on&&kSubCh!==b.dataset.row); } }
 KROWS.forEach(([n,chars])=>{ const b=document.createElement("button"); b.textContent=n; b.dataset.row=n; b.onclick=()=>{
-  if(kMode==="yoji"){ if(kq.value){ kq.value=""; renderK(); }
-    // 四字熟語は全部表示したまま、その行の見出しへ飛ぶ
-    const hd=[...klist.querySelectorAll(".khead")].find(d=>chars.includes(d.dataset.h)); if(hd) hd.scrollIntoView({behavior:"smooth",block:"start"}); return; }
-  kRow=n; kq.value=""; renderK(); }; krows.appendChild(b); });
+  if(kq.value){ kq.value=""; renderK(); }
+  const again=kSubRow===n;
+  if(kMode!=="yoji" && kRow!==n){ kRow=n; renderK(); }
+  kSubRow=n; kSubCh=kJump(chars, again?kSubCh:"")||n; kLabel();
+  kmeta.textContent=(kMode==="yoji"?"四字熟語":`${n}行`)+`　「${kSubCh}」から　（もう一度押すと次の字へ）`;
+  }; krows.appendChild(b); });
 let kMode="kot";
 const kmKot=document.getElementById("kmKot"), kmYoji=document.getElementById("kmYoji");
-function setKMode(m){ kMode=m; kq.value=""; kRow="あ"; kmKot.setAttribute("aria-pressed",m==="kot"); kmYoji.setAttribute("aria-pressed",m==="yoji");
+function setKMode(m){ kMode=m; kq.value=""; kRow="あ"; kSubRow=""; kSubCh=""; kLabel(); kmKot.setAttribute("aria-pressed",m==="kot"); kmYoji.setAttribute("aria-pressed",m==="yoji");
   kq.placeholder=m==="yoji"?"言葉で探す（例：いっせき、一石）":"言葉で探す（例：ねこ、猫）"; renderK(); window.scrollTo({top:document.getElementById("p-kot").offsetTop-10}); }
 kmKot.onclick=()=>setKMode("kot"); kmYoji.onclick=()=>setKMode("yoji");
 function renderK(){
@@ -3639,7 +3650,7 @@ function openK(i){
 document.getElementById("kprev").onclick=()=>{ if(kIdx>0) openK(kIdx-1); };
 document.getElementById("knext").onclick=()=>{ if(kIdx<kList.length-1) openK(kIdx+1); };
 document.getElementById("kclose").onclick=closeSheet;
-kq.addEventListener("input",renderK);
+kq.addEventListener("input",()=>{ kSubRow=""; kSubCh=""; kLabel(); renderK(); });
 renderK();
 
 /* 魚偏 */
@@ -4226,7 +4237,7 @@ body:not(.fishbg) .lang2 .btn[aria-pressed="true"]{background:var(--accent);colo
 .credits span{font-size:.8rem}
 .credits br{display:block}
 .credits{white-space:nowrap;text-align:left!important;display:table;margin-left:auto;margin-right:auto;max-width:100%}
-html,body{overflow-x:hidden}
+html,body{overflow-x:clip}
 .credits span{text-align:center}
 /* v81：言葉モード */
 .wlabel{font-size:.78rem;color:var(--muted,#567);margin:0 2px 6px;line-height:1.5}
@@ -4283,7 +4294,7 @@ const H={
  "t-read":["よみで探す",["1文字の漢字は、入力するとすぐ下に出ます。","地名は、読みがはっきり地名と分かるとき（例：ながさき）だけ出ます。","熟語や言葉は「探す」かキーボードの決定で探します。","難しい漢字は、コピーして貼り付けても調べられます。"]],
  "t-cam":["カメラ",["読めない字を大きく、はっきり写すほど正確に読めます。","読みたい言葉を指でなぞって四角く囲み、「囲んだ所を読む」を押します。","写真を動かすときは「✋ 動かす」を押してから指で動かします。2本指で広げると拡大できます。","英語を読むときは、上の「英語を読む」に切り替えます。"]],
  "t-eng":["英語の辞書",["英語を入れると日本語の意味（英和）、日本語を入れると英語（和英）が出ます。","医学用語も調べられます。","🔊を押すと英語の発音が聞けます。"]],
- "t-kot":["ことわざ・四字熟語",["上の行（あ・か・さ…）を押すと、その行へ飛びます。","一覧の言葉を押すと意味が見られます。","下の入力欄に言葉を入れると、それを含むものを探せます。"]],
+ "t-kot":["ことわざ・四字熟語",["上の行（あ・か・さ…）を押すと、その行へ飛びます。同じ行をもう一度押すと、あ→い→う…と次の字へ進みます。","一覧の言葉を押すと意味が見られます。","下の入力欄に言葉を入れると、それを含むものを探せます。"]],
  "t-fish":["魚偏",["字を押すと、料理や漁法が見られます。","赤い枠は毒やトゲに注意する魚です。","「番外編」には魚偏ではない魚や海の生き物があります。"]]
 };
 const bg=document.getElementById("sbg"), sh=document.getElementById("hsheet");
@@ -4392,6 +4403,8 @@ function loadKVG(){
 .hs .ck{flex:none;width:26px;height:26px;border-radius:6px;border:2px solid #9aa;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:1rem}
 .hs .it.on{border-color:#c0392b;background:#fdf0ee}.hs .it.on .ck{background:#c0392b;border-color:#c0392b}
 .hs .selhint{margin:0 0 10px;font-size:.9rem;color:#c0392b;font-weight:700}
+.krows button.ksub{color:#ffd54a!important;font-weight:900}
+#krows{position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;box-shadow:0 4px 6px -4px rgba(0,0,0,.18)}
 </style>
 <div class="hs" id="hs" role="dialog" aria-modal="true" aria-label="検索履歴"><div class="in">
 <button class="close" id="hsClose" aria-label="閉じる">×</button><h2>検索履歴</h2><div id="hsBody"></div></div></div>

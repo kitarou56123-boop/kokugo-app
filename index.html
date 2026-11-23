@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.37（2026-11-24）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.38（2026-11-24）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -4397,7 +4397,7 @@ function loadKVG(){
 <button class="close" id="hsClose" aria-label="閉じる">×</button><h2>検索履歴</h2><div id="hsBody"></div></div></div>
 <script>
 (function(){
-  const KEY="gariben-history", MAX=100;
+  const KEY="gariben-history", MAX=500;
   const load=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"[]"); }catch(e){ return []; } };
   const save=a=>{ try{ localStorage.setItem(KEY,JSON.stringify(a)); }catch(e){} };
   function add(t,v){ v=String(v||"").trim(); if(!v) return; let a=load().filter(x=>!(x.t===t&&x.v===v)); a.unshift({t,v,d:Date.now()}); save(a.slice(0,MAX)); }

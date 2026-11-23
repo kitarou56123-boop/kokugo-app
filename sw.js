@@ -1,6 +1,6 @@
 // ガリ勉：インストールアプリ用。
 // アプリ自身のファイルは毎回新しい版を確かめる。辞書データ（*.bin）と、手書き・カメラの読み取り部品（外部）は一度取ったら保存して使う
-const CACHE = "gariben-v130";
+const CACHE = "gariben-v131";
 const DATA = "gariben-data";   // 辞書データ（*.bin）は名前ごとに中身が変わらないので、別の箱に取っておく
 const EXT = "gariben-ext";     // ver.1.24：手書き・カメラの読み取り部品（電波のない所でも使えるように保存）
 const EXT_HOSTS = ["huggingface.co", "cdn.jsdelivr.net", "tessdata.projectnaptha.com", "fonts.googleapis.com", "fonts.gstatic.com"];

@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.29（2026-11-23）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.30（2026-11-23）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -626,6 +626,12 @@ const EXTRA_WORDS=[
  ["対魯",["たいろ"],"魯の国に対する（戦い・政策）。"],
  ["対斉",["たいせい"],"斉の国に対する（戦い・政策）。"],
  ["竹簡",["ちくかん"],"竹のふだ。紙のない時代に文字を書いた。"],
+ ["海狗",["おっとせい","かいく"],"オットセイ（膃肭臍）。「海の犬」の意味。"],
+ ["海馬",["たつのおとしご","とど","かいば"],"たつのおとしご：馬のような形の魚。とど：アシカの仲間の大きな動物。かいば：脳の一部（記憶に関わる）。"],
+ ["海狸",["びーばー","かいり"],"ビーバー。川に巣を作る動物。"],
+ ["海鰻",["はも","あなご"],"はも（鱧）、またはあなご（穴子）。細長い魚。"],
+ ["海神",["わたつみ","わだつみ","かいじん"],"海の神。また、海そのもの。"],
+ ["海嘯",["かいしょう","つなみ"],"満ち潮が川をさかのぼって起こる高い波。また、津波。"],
  ["苫鵡",["とまむ"],"北海道勇払郡占冠村の地名「トマム」を漢字で書いたもの。"],
  ["α",["あるふぁ"],"ギリシャ文字の1番目（小文字）。大文字はΑ。"],["β",["べーた"],"ギリシャ文字の2番目（小文字）。大文字はΒ。"],
  ["γ",["がんま"],"ギリシャ文字の3番目（小文字）。大文字はΓ。"],["Γ",["がんま"],"ギリシャ文字の3番目（大文字）。小文字はγ。"],
@@ -2031,6 +2037,7 @@ function grabReading(word,text){
 }
 async function lookupMeaning(word){
   if(ATEJI.has(word)) return atejiMeaning(word);
+  { const ex=EXTRA_WORDS.find(x=>x[0]===word); if(ex) return ex[1].length>1?ex[2]+"（読み："+ex[1].join("・")+"）":ex[2]; }   // ver.1.30：ガリ勉に足した言葉（海狗・孫子の地名など）
   if(meanCache.has(word)) return meanCache.get(word);
   let m="";
   try{
@@ -2228,7 +2235,7 @@ async function showWordResult(text,info){
   lines=items.map(x=>x.t); all=lines.join("");
   // 1) 読み取った文字にふりがなを付けて表示
   const head=document.createElement("p"); head.className="section-t"; head.textContent="読み取った文字"; camRes.appendChild(head);
-  const toks=[], lineToks=[];
+  const toks=[]; let lineToks=[];
   if(tk){
     for(const line of lines){
       let tt=await fixReadings(await tk.tok(line));
@@ -2238,6 +2245,8 @@ async function showWordResult(text,info){
       lineToks.push(tt);
     }
     lines=lineToks.map(tt=>tt.map(x=>x.surface_form).join("")); all=lines.join("");
+    // ver.1.30：行がまるごとガリ勉に足した言葉（海狗など）の時は、その読みをふりがなにする
+    lineToks=lineToks.map(tt=>{ const w=tt.map(x=>x.surface_form).join(""); const ex=EXTRA_WORDS.find(x=>x[0]===w); return ex?[{surface_form:w,reading:toKata(ex[1][0]),pos:"名詞",pos_detail_1:"一般",basic_form:w,word_type:"KNOWN"}]:tt; });
   }
   const furiPs=[];
   lines.forEach((line,li)=>{
@@ -2258,7 +2267,7 @@ async function showWordResult(text,info){
   if(!tk){ cstat.textContent="読みがなの辞書を読み込めませんでした。通信を確認してください。漢字は下のボタンから1字ずつ調べられます。"; }
   // 2) 意味を調べる言葉を選ぶ（全体 → つながった名詞 → 1語ずつ）
   const cands=[], seen=new Set();
-  const push=(w,r,must)=>{ if(!w||seen.has(w)||!hasKanji(w)) return; seen.add(w); cands.push({w,r:ATEJI.has(w)?ATEJI.get(w).r:kata2hira(r||""),must}); };
+  const push=(w,r,must)=>{ if(!w||seen.has(w)||!hasKanji(w)) return; seen.add(w); const ex=EXTRA_WORDS.find(x=>x[0]===w); cands.push({w,r:ex?ex[1][0]:ATEJI.has(w)?ATEJI.get(w).r:kata2hira(r||""),must}); };
   const content=x=>(x.pos==="名詞"&&!/^(数|代名詞|非自立|接尾)$/.test(x.pos_detail_1))||((x.pos==="動詞"||x.pos==="形容詞")&&x.pos_detail_1==="自立");
   if(tk){
     if([...all].length<=12) push(all,toks.map(x=>x.reading||x.surface_form).join(""),false);

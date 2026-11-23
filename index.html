@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.30（2026-11-23）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.31（2026-11-23）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -632,6 +632,15 @@ const EXTRA_WORDS=[
  ["海鰻",["はも","あなご"],"はも（鱧）、またはあなご（穴子）。細長い魚。"],
  ["海神",["わたつみ","わだつみ","かいじん"],"海の神。また、海そのもの。"],
  ["海嘯",["かいしょう","つなみ"],"満ち潮が川をさかのぼって起こる高い波。また、津波。"],
+ ["𰻞𰻞麺",["びゃんびゃんめん"],"中国・陝西省の、幅広く平たい麺料理。「ビャン」の字は画数がとても多いことで有名。"],
+ ["𰻝𰻝面",["びゃんびゃんめん"],"𰻞𰻞麺を中国の簡体字で書いたもの。"],
+ ["哥斯達利加",["こすたりか"],"中米の国「コスタリカ」を漢字で書いたもの。"],
+ ["哥斯達黎加",["こすたりか"],"中米の国「コスタリカ」を漢字で書いたもの（中国での書き方）。"],
+ ["亜富汗斯坦",["あふがにすたん"],"アジアの国「アフガニスタン」を漢字で書いたもの。"],
+ ["亜富汗",["あふがん"],"アフガニスタン（アフガン）を漢字で書いたもの。"],
+ ["阿富汗",["あふがん","あふがにすたん"],"アフガニスタンの中国での書き方。"],
+ ["氷州",["あいすらんど"],"北ヨーロッパの国「アイスランド」を漢字で書いたもの。"],
+ ["愛撒倫",["あいすらんど"],"北ヨーロッパの国「アイスランド」を漢字で書いたもの。"],
  ["苫鵡",["とまむ"],"北海道勇払郡占冠村の地名「トマム」を漢字で書いたもの。"],
  ["α",["あるふぁ"],"ギリシャ文字の1番目（小文字）。大文字はΑ。"],["β",["べーた"],"ギリシャ文字の2番目（小文字）。大文字はΒ。"],
  ["γ",["がんま"],"ギリシャ文字の3番目（小文字）。大文字はΓ。"],["Γ",["がんま"],"ギリシャ文字の3番目（大文字）。小文字はγ。"],
@@ -668,7 +677,9 @@ for(const [k,st,on,kun,m] of [
   ["𪚥",64,["てつ","てち"],["しゃべる"],"龍が4つ。口数が多いこと。"],
   ["䨻",52,["ほう","びょう"],[],"雷が4つ。雷の大きな音。"],
   ["𠔻",64,["せい"],[],"興が4つ。画数がとても多い字の一つ。"],
-  ["齉",36,["のう","どう"],[],"鼻がつまる。鼻声で話す。（鼻＋嚢）"]
+  ["齉",36,["のう","どう"],[],"鼻がつまる。鼻声で話す。（鼻＋嚢）"],
+  ["𰻞",58,["びゃん"],[],"中国・陝西省の幅広い麺「ビャンビャン麺（𰻞𰻞麺）」の「ビャン」。画数がとても多い字として有名。"],
+  ["𰻝",42,["びゃん"],[],"「𰻞（びゃん）」を簡単にした字（中国の簡体字）。"]
 ]){
   if(!DB.has(k)){
     DB.set(k,{k,st,gr:null,on,kun,fq:99999});
@@ -4401,7 +4412,7 @@ const RAD_MAP="1:一丑下且丘三七上丈丞世丁不丙並万与両丐丕丗
 const RADN=new Map(), RADOF=new Map();
 for(const l of RAD_NAMES.split("\n")){ const [n,rest]=l.split("|"); RADN.set(+n, rest.split(";").map(x=>{ const i=x.indexOf(":"); return {f:x.slice(0,i), nm:x.slice(i+1)}; })); }
 for(const l of RAD_MAP.split("\n")){ const i=l.indexOf(":"); const n=+l.slice(0,i); for(const c of l.slice(i+1)) RADOF.set(c,n); }
-if(!RADOF.has("齉")) RADOF.set("齉",209);
+if(!RADOF.has("齉")) RADOF.set("齉",209); RADOF.set("𰻞",162); RADOF.set("𰻝",162);
 let KRADMAP=null;
 function radicalOf(k){
   const n=RADOF.get(k); if(!n) return null; const forms=RADN.get(n); if(!forms) return null;

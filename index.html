@@ -459,8 +459,8 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
   </section>
 
   <section id="p-kot" hidden>
-    <div class="kmodes"><button type="button" id="kmKot" aria-pressed="true">ことわざ</button><button type="button" id="kmYoji" aria-pressed="false">四字熟語</button></div>
-    <div class="krows" id="krows"></div>
+    <div class="kstick"><div class="kmodes"><button type="button" id="kmKot" aria-pressed="true">ことわざ</button><button type="button" id="kmYoji" aria-pressed="false">四字熟語</button></div>
+    <div class="krows" id="krows"></div></div>
     <span class="qwrap" style="margin-top:10px"><input type="text" id="kq" placeholder="言葉で探す（例：ねこ、猫）" autocomplete="off" spellcheck="false"><button type="button" class="xclr" aria-label="消す">✕</button></span>
     <div class="meta" id="kmeta"></div>
     <div class="klist" id="klist"></div>
@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.39（2026-11-24）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.40（2026-11-24）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -3606,7 +3606,7 @@ function kJump(chars,start){
   const heads=[...klist.querySelectorAll(".khead")].filter(d=>chars.includes(d.dataset.h));
   if(!heads.length) return null;
   let i=0; if(start){ const cur=chars.indexOf(start); const nx=heads.find(d=>chars.indexOf(d.dataset.h)>cur); i=nx?heads.indexOf(nx):0; }
-  const hd=heads[i]; const y=hd.getBoundingClientRect().top+window.scrollY-krows.offsetHeight-6; window.scrollTo({top:y,behavior:"smooth"}); return hd.dataset.h;
+  const hd=heads[i]; const y=hd.getBoundingClientRect().top+window.scrollY-document.querySelector('.kstick').offsetHeight-6; window.scrollTo({top:y,behavior:"smooth"}); return hd.dataset.h;
 }
 function kLabel(){ for(const b of krows.children){ const on=b.dataset.row===kSubRow&&kSubCh; b.textContent=on?kSubCh:b.dataset.row; b.classList.toggle("ksub",!!on&&kSubCh!==b.dataset.row); } }
 KROWS.forEach(([n,chars])=>{ const b=document.createElement("button"); b.textContent=n; b.dataset.row=n; b.onclick=()=>{
@@ -4404,7 +4404,9 @@ function loadKVG(){
 .hs .it.on{border-color:#c0392b;background:#fdf0ee}.hs .it.on .ck{background:#c0392b;border-color:#c0392b}
 .hs .selhint{margin:0 0 10px;font-size:.9rem;color:#c0392b;font-weight:700}
 .krows button.ksub{color:#ffd54a!important;font-weight:900}
-#krows{position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;box-shadow:0 4px 6px -4px rgba(0,0,0,.18)}
+.kstick{position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;box-shadow:0 4px 6px -4px rgba(0,0,0,.18)}
+.kstick .kmodes{margin-bottom:6px}
+.kstick .kmodes button{padding:6px 0;font-size:1rem}
 </style>
 <div class="hs" id="hs" role="dialog" aria-modal="true" aria-label="検索履歴"><div class="in">
 <button class="close" id="hsClose" aria-label="閉じる">×</button><h2>検索履歴</h2><div id="hsBody"></div></div></div>

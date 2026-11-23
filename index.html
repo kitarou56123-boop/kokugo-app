@@ -487,7 +487,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.24（2026-11-22）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.25（2026-11-23）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -2158,6 +2158,7 @@ async function fixReadings(toks){
   }
   return out;
 }
+let camSure=false;
 async function showWordResult(text,info){
   camRes.innerHTML=""; wordInfo.innerHTML="";
   let items=(info&&info.length?info:String(text||"").split(/\r?\n/).map(t=>({t,c:null})))
@@ -2173,11 +2174,12 @@ async function showWordResult(text,info){
   let tk=null; try{ tk=await loadKuromoji(); }catch(e){ if(myGen===camGen) cstat.textContent="読みがなの辞書を読み込めませんでした。電波の良い所で、もう一度押してください。"; }
   if(myGen!==camGen) return;
   // 読み違いの直しと、切れ端の行の取り除き（全部消えてしまう時は元のまま）
-  if(tk) for(const x of items){ x.t=await fixLookalike(x.t,tk); if(myGen!==camGen) return; }
-  if(tk) for(const x of items) x.t=await atejiFix(x.t,tk);
-  if(tk) for(const x of items) x.t=await fuzzyFix(x.t,tk);
+  const fixOK=tk && !camSure;   // ver.1.25：1字ずつ確かめが取れた時は、辞書の言葉に寄せて書き換えない
+  if(fixOK) for(const x of items){ x.t=await fixLookalike(x.t,tk); if(myGen!==camGen) return; }
+  if(fixOK) for(const x of items) x.t=await atejiFix(x.t,tk);
+  if(fixOK) for(const x of items) x.t=await fuzzyFix(x.t,tk);
   let nearAlts=[], nearKeep=[], nearUI=[];
-  if(tk) for(const x of items){ if([...x.t].length>12) continue; const r=await fixNear(x.t,tk,x.sc&&x.sc.length===[...x.t].length?x.sc:null); x.t=r.t; nearAlts.push(...r.alts); nearKeep.push(...r.keep); if(myGen!==camGen) return; }
+  if(fixOK) for(const x of items){ if([...x.t].length>12) continue; const r=await fixNear(x.t,tk,x.sc&&x.sc.length===[...x.t].length?x.sc:null); x.t=r.t; nearAlts.push(...r.alts); nearKeep.push(...r.keep); if(myGen!==camGen) return; }
   const junkFlags=[]; for(const x of items) junkFlags.push(tk?await isJunkLine(x.t,tk):false);
   const good=items.filter((x,i)=>!(x.c!=null&&x.c<45)&&!junkFlags[i]);
   if(good.length) items=good;
@@ -2198,7 +2200,10 @@ async function showWordResult(text,info){
   const furiPs=[];
   lines.forEach((line,li)=>{
     const p=document.createElement("p"); p.className="furi"; furiPs[li]=p;
-    if(tk){ for(const x of lineToks[li]){ toks.push(x); p.appendChild(x.reading?rubyFor(x.surface_form,x.reading):document.createTextNode(x.surface_form)); } }
+    if(tk){ for(const x of lineToks[li]){ toks.push(x);
+      // ver.1.25：読みがなの辞書が知らない字（魯・胥など）は、漢字の辞書の音読みをふりがなにする
+      let rd=x.reading; if(!rd){ const cs=[...x.surface_form]; if(cs.length&&cs.every(c=>DB.has(c))){ const r=cs.map(c=>{ const e=DB.get(c); return (e.on[0]||e.kun[0]||"").replace(/[.\-].*$/,""); }); if(r.every(Boolean)) rd=r.join(""); } }
+      p.appendChild(rd?rubyFor(x.surface_form,rd):document.createTextNode(x.surface_form)); } }
     else p.textContent=line;
     camRes.appendChild(p);
   });
@@ -2417,6 +2422,8 @@ async function segRead(pr,nHint,vertical){
   }
   return out;
 }
+let KRADP=null;
+function kradParts(k){ if(!KRADP){ KRADP=new Map(); try{ for(const l of KRAD_SRC.split("\n")){ const cs=[...l]; if(cs.length) KRADP.set(cs[0],cs.slice(1)); } }catch(e){} } return KRADP.get(k)||[]; }
 /* 形がそっくりな漢字とカタカナ（口とロなど）。前後が漢字なら漢字のほうにする */
 const CAM_LA=[["口","ロ"],["二","ニ"],["工","エ"],["力","カ"],["夕","タ"],["八","ハ"],["一","ー"]];
 const CAM_LA_MAP=new Map(); for(const g of CAM_LA) for(const c of g) CAM_LA_MAP.set(c,g);
@@ -2446,6 +2453,7 @@ function predWords(){
 }
 async function wordRescue(prepped,best){
   if(!best || camLang==="eng" || (best.lines||[]).length>1) return best;
+  if(best.camAgree || best.sure) return best;   // ver.1.25：読み取りと手書きエンジンが1字ずつ一致した時は、言葉に寄せて直さない（孫子の軍形→軍鶏など）
   const chars=[...(best.text||"").replace(/\s+/g,"")];
   const n=chars.length;
   if(n<2 || n>4 || !chars.every(c=>/\p{Script=Han}/u.test(c))) return best;
@@ -2506,16 +2514,29 @@ async function refineByModel(prepped,best,boxR){
     else if(allJ && !multi && chars.length<=12){
       const cells=await segRead(prepped,chars.length,vertical);
       if(cells && cells.length===chars.length){
+        const agree=[];
         cells.forEach((c,i)=>{ if(!c) return; const mc=c.top[0][0], mp=pOf(mc,c.P), pt=pOf(chars[i],c.P);
-          if(CAM_LA_MAP.has(mc)&&CAM_LA_MAP.get(mc)===CAM_LA_MAP.get(chars[i])) return;
-          if(mc!==chars[i] && mp>=0.8 && pt<0.05 && (idx.has(chars[i]) || mp>=0.95)){ out[i]=mc; changed=true; } });
+          if(CAM_LA_MAP.has(mc)&&CAM_LA_MAP.get(mc)===CAM_LA_MAP.get(chars[i])){ agree[i]=true; return; }
+          if(mc===chars[i] || pt>=0.3){ agree[i]=true; return; }
+          // ver.1.25：読み取りが字の一部しか拾っていない時（魯→魚、閭→呂など）は、自信が中くらいでも入れ替える
+          const partOf=(big,small)=>{ const ps=kradParts(big); return ps.includes(small) || (kradParts(small).length>0 && kradParts(small).every(x=>ps.includes(x))); };
+          if(mp>=0.8 && pt<0.05 && (idx.has(chars[i]) || mp>=0.95)){ out[i]=mc; changed=true; agree[i]=true; }
+          else if(mp>=0.45 && pt<0.03 && partOf(mc,chars[i])){ out[i]=mc; changed=true; agree[i]=true; }
+          else if(mp>=0.6 && pt<0.01 && idx.has(chars[i])){ out[i]=mc; changed=true; agree[i]=true; }
+          else if(mp<0.35){ // ver.1.25：エンジンが覚えていない珍しい字（趙・胥・闔など）。前もって計算した表で形が一番合う珍しい字が、読み取った字よりずっと合う時
+            const rk=rankCands(c.P)[0];
+            if(rk && rk.rare && rk.s>=0.25){ const T=prepareRare(), h=c.P.map(Math.sqrt);
+              const scoreOf=ch=>{ if(idx.has(ch)) return h[idx.get(ch)]; const r=T.ch.indexOf(ch); if(r<0) return 0; let v=0; for(let j=0;j<12;j++) v+=h[T.ix[r*12+j]]*T.w[r*12+j]; return v*0.85; };
+              if(scoreOf(chars[i])<rk.s*0.35){ out[i]=rk.char; changed=true; agree[i]=true; } }
+          } });
+        best.camAgree=cells.length===chars.length && agree.filter(Boolean).length===chars.length;
       }
     }
   }
   const fixed=camFixLookalikes(out); if(fixed.join("")!==out.join("")){ out=fixed; changed=true; }
   if(!changed) return best;
   const t=out.join("");
-  return Object.assign({},best,{text:t,lines:[{t,c:best.conf,sc:null}],refined:true});
+  return Object.assign({},best,{text:t,lines:[{t,c:best.conf,sc:null}],refined:true,sure:!!best.camAgree});
 }
 /* v80：キーボードのキーのように、明るい周りの中に暗い板があり、その中に白い字がある時、
    板の部分だけを切り出す（周りが明るいと白黒の判断を間違えるため）。見つからなければ null */
@@ -2568,6 +2589,13 @@ async function ocrBest(img,plan,alive,onStep,depth){
       if(best.conf>=70) break;
     }
   }
+  /* ver.1.25：縦1列の字を、横書きの「1行1〜2字」として読んだ時は、縦1列の言葉としてつなぎ直す（孫子の対魯などで、
+     1字ずつ手書きエンジンで確かめられるようにする） */
+  if(best && camLang!=="eng" && best.lines && best.lines.length>1 && img.height/img.width>1.25
+     && best.lines.every(l=>[...l.t.replace(/\s+/g,"")].length<=2)){
+    const t=best.lines.map(l=>l.t.replace(/\s+/g,"")).join(""), scs=best.lines.every(l=>l.sc)?best.lines.flatMap(l=>l.sc):null;
+    best=Object.assign({},best,{text:t,lines:[{t,c:best.conf,sc:scs&&scs.length===[...t].length?scs:null}],lang:"jpn_vert"});
+  }
   try{ const rb=await refineByModel(prepped,best,img.height/img.width); if(!alive()) return null; best=rb; }catch(e){}
   try{ const rw=await wordRescue(prepped,best); if(!alive()) return null; best=rw; }catch(e){}
   // それでも読めない時は、暗い板（キーなど）の部分だけを切り出して読み直す
@@ -2600,6 +2628,7 @@ async function runOCRPlan(img,plan){
     if(myGen!==camGen) return;
     // 読みがなの辞書は大きいので、初めて使う時は読み取り用の作業者を片付けてメモリを空ける
     if(camLang!=="eng"&&!kuroReady) stopOcrWorkers();
+    camSure=!!(best&&(best.camAgree||best.sure));
     await (camLang==="eng"?showEnglishOcr:showWordResult)(best?best.text:"",best?best.lines:null);
   }catch(e){ if(myGen===camGen) cstat.textContent="読み取りに失敗しました。通信を確認して、もう一度お試しください。"; }
   finally{ if(myGen===camGen){ ocrLog=null; camBusy=false; furiBtn.disabled=false; hereBtn.disabled=!sel; camStopUI(false); } }

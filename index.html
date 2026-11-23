@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.33（2026-11-23）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.34（2026-11-23）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）、JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -4100,6 +4100,11 @@ const KRAD_SRC="𱁬一雨二厶月立竜田乙\n䨺一雨二厶\n䨻雨田\n�
   for(const l of KRAD_SRC.split("\n")){ const a=[...l]; KR.set(a[0], new Set(a.slice(1))); }
   /* 元データで部品が抜けている字を補う（例：兪の右下の刂） */
   for(const [k,p] of [["兪","刂"],["俞","刂"]]) if(KR.has(k)) KR.get(k).add(p);
+  /* ver.1.34：戸籍・人名などの字（約3万8千字）の部品。字の組み立て（IDS）から作ったもの。裏で読み込んで足す */
+  (async()=>{ try{ const bin=await getData("kradx-1.bin"); const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    for(const l of txt.split("\n")){ const a=[...l]; if(a.length>1 && !KR.has(a[0])) KR.set(a[0],new Set(a.slice(1))); }
+    for(const ps of KR.values()) if(ps.has("ノ")&&ps.has("土")&&ps.has("口")) ps.add("牛");
+    if(built) update(); }catch(e){} })();
   /* 「告」の上の形（ノ＋土）は「牛」に見えるので、「牛」でも出るようにする */
   for(const ps of KR.values()) if(ps.has("ノ")&&ps.has("土")&&ps.has("口")) ps.add("牛");
   /* 形が似ていて迷いやすい部品は、どちらを選んでも見つかるようにする */

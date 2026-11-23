@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.36（2026-11-23）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.37（2026-11-24）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -4459,14 +4459,18 @@ function radicalOf(k){
 }
 (function(){
   const _os=openSheet; openSheet=function(k){ _os(k);
-    try{ const r=radicalOf(k); if(!r) return; const dl=document.getElementById("sinfo");
+    try{ const r=radicalOf(k); if(!r) throw 0; const dl=document.getElementById("sinfo");
       const t=document.createElement("dt"); t.textContent="部首"; const d=document.createElement("dd");
       d.innerHTML='<span class="radc"></span>（<span class="radn"></span>）'; d.querySelector(".radc").textContent=r.f; d.querySelector(".radn").textContent=r.nm;
       const ref=[...dl.querySelectorAll("dt")].find(x=>x.textContent==="画数");
       if(ref) dl.insertBefore(t,ref), dl.insertBefore(d,ref); else dl.append(t,d);
-    }catch(e){} };
+    }catch(e){}
+    // ver.1.37：文字コード（控えめに一番下へ）
+    try{ const dl=document.getElementById("sinfo"); const cp=k.codePointAt(0).toString(16).toUpperCase().padStart(4,"0");
+      const t=document.createElement("dt"); t.className="ucode"; t.textContent="文字コード"; const d=document.createElement("dd"); d.className="ucode"; d.textContent="U+"+cp; dl.append(t,d); }catch(e){} };
 })();
 </script>
-<style>#sinfo .radc{font-family:var(--serif);font-size:1.35em;font-weight:700;color:#2f5d62}</style>
+<style>#sinfo .ucode{font-size:.75rem;color:var(--sub);opacity:.8}
+#sinfo .radc{font-family:var(--serif);font-size:1.35em;font-weight:700;color:#2f5d62}</style>
 </body>
 </html>

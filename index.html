@@ -2955,7 +2955,7 @@ wordBtn.onclick=async()=>{
       try{ await loadEJ(); const rev=buildRev().get(toHira(raw))||[]; en=[...new Map(rev.sort((p,q)=>p.score-q.score).map(x=>[x.e.w.toLowerCase(),x.e.w])).values()].slice(0,5); }catch(e){}
       if(parts.length||en.length) own={parts,en};
     }
-    const kots=[]; try{ if(hasKanji) for(const x of (Array.isArray(KOT)?KOT:[])){ if(x&&x.t&&x.t.includes(raw)) kots.push(x); } }catch(e){}
+    const kots=[]; try{ const nh=toHira(raw); for(const x of [...(Array.isArray(KOT)?KOT:[]),...(Array.isArray(YOJI)?YOJI:[])]){ if(!x||!x.t) continue; if(hasKanji?x.t.includes(raw):(nh.length>=4&&x.r===nh)) kots.push(x); } }catch(e){}   // ver.1.43：ひらがなで全部入れた時も、ことわざ・四字熟語を出す
     if(!arr.length && !own && !kots.length && !hasKanji && (IDX.get(n)||[]).length){ rmeta.textContent=""; return; }
     if(!arr.length && !own && !kots.length){ rmeta.textContent="この言葉は端末内の辞書にありません。下の漢字を押すと、1字ずつの読み方と意味が見られます。"; document.querySelectorAll("#singleWrap .reqlink,#singleWrap .nf").forEach(x=>x.remove()); wordsWrap.appendChild(reqLink("📮 この言葉が出ない時は知らせる")); return; }
     rmeta.textContent=""; document.querySelectorAll("#singleWrap .reqlink,#singleWrap .nf").forEach(x=>x.remove());

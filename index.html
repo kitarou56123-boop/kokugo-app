@@ -494,7 +494,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 .reqfoot{display:block;text-align:center;margin:4px 0 0;font-size:.8rem;color:var(--accent);text-decoration:underline}body.fishbg .reqfoot{color:#d6e2f7}</style>
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}</style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.40（2026-11-24）</p>
+  <p class="meta" style="text-align:center;margin:2px 0 0">ver.1.41（2026-11-24）</p>
   <p class="meta credits" style="margin-top:6px;text-align:center"><span style="display:block;font-weight:700;letter-spacing:.15em;margin-bottom:2px">情報提供</span>漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p>
 </div>
 
@@ -4487,5 +4487,23 @@ function radicalOf(k){
 </script>
 <style>#sinfo .ucode{font-size:.75rem;color:var(--sub);opacity:.8}
 #sinfo .radc{font-family:var(--serif);font-size:1.35em;font-weight:700;color:#2f5d62}</style>
+<script>
+/* ver.1.41：スマホの「戻る」で閉じないように。手書き以外の画面や、開いた画面がある時は、戻るで手書きのトップへ戻る */
+(function(){
+  try{ history.replaceState({g:0},""); }catch(e){}
+  const away=()=>{ try{ if(!history.state||history.state.g!==1) history.pushState({g:1},""); }catch(e){} };
+  const _st=showTab; showTab=function(n){ const r=_st.apply(this,arguments); if(n!=="write") away(); return r; };
+  const _os=openSheet; openSheet=function(){ const r=_os.apply(this,arguments); away(); return r; };
+  for(const id of ["soBtn","histBtn","helpBtn"]){ const b=document.getElementById(id); if(b) b.addEventListener("click",away); }
+  document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest(".kitem,.fcell,.fish button,#klist button")) away(); },true);
+  window.addEventListener("popstate",()=>{
+    try{ closeSheet(); }catch(e){}
+    for(const id of ["so","hs"]){ const x=document.getElementById(id); if(x&&x.classList.contains("open")){ const c=x.querySelector(".close"); if(c) c.click(); else x.classList.remove("open"); } }
+    try{ document.getElementById("hsheet").classList.remove("open"); document.getElementById("sbg").classList.remove("open"); }catch(e){}
+    try{ _st("write"); }catch(e){}
+    window.scrollTo({top:0});
+  });
+})();
+</script>
 </body>
 </html>

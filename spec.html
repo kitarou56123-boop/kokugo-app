@@ -5,55 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ガリ勉 スペック表</title>
 <style>
-:root{--ink:#263238;--sub:#607d8b;--acc:#b8641f;--line:#d3d8d6;--bg:#eef0ef;--head:#2f5d62}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",sans-serif;font-size:16px;line-height:1.6}
-header{background:var(--head);color:#fff;padding:22px 16px 18px;text-align:center}
-header h1{margin:0;font-size:1.6rem;letter-spacing:.1em}
-header p{margin:4px 0 0;font-size:.85rem;opacity:.9}
-main{max-width:640px;margin:0 auto;padding:12px 12px 40px}
-section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 14px 10px;margin:14px 0}
-h2{margin:0 0 6px;font-size:1.15rem;color:var(--head);border-left:5px solid var(--acc);padding-left:8px}
-.lead{margin:4px 0 10px;font-size:.95rem}
-dl{margin:0}
-.row{display:flex;gap:10px;padding:9px 0;border-top:1px solid #eef1f0}
-.row:first-child{border-top:none}
-dt{flex:0 0 38%;font-weight:700;font-size:.9rem;color:var(--ink)}
-dd{margin:0;flex:1;font-size:.92rem}
-.num{color:var(--acc);font-weight:700;font-size:1.05rem;display:block}
-.note{color:var(--sub);font-size:.8rem;display:block}
-ul{margin:8px 0 4px;padding-left:1.2em;font-size:.9rem}
-li{margin:4px 0}
-footer{text-align:center;color:var(--sub);font-size:.8rem;padding:10px}
+html,body{margin:0;height:100%}
+body{background:#eef0ef;color:#263238;font-family:"Hiragino Sans","Noto Sans JP",sans-serif;display:flex;flex-direction:column;min-height:100svh}
+header{background:#2f5d62;color:#fff;text-align:center;padding:10px 8px 8px}
+h1{margin:0;font-size:1.25rem;letter-spacing:.08em}
+header p{margin:2px 0 0;font-size:.72rem;opacity:.9}
+main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;max-width:560px;width:100%;margin:0 auto;align-content:start;padding-top:12px}
+.c{background:#fff;border:1px solid #d3d8d6;border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;min-height:56px}
+.c b{color:#b8641f;font-size:1.2rem;line-height:1.15}
+.c small{font-size:.72rem;margin-left:2px}
+.c span{font-size:.72rem;color:#455a64;line-height:1.25}
 </style>
 </head>
 <body>
-<header>
-<h1>ガリ勉</h1>
-<p>手書きで引ける漢字辞書　スペック表</p>
-<p>ver.1.56（2026年11月25日）</p>
-</header>
-<main>
-<section>
-<h2>収録数</h2>
-<dl>
-<div class="row"><dt>漢字</dt><dd><span class="num">51,718字</span></dd></div>
-<div class="row"><dt>手書きで出せる漢字</dt><dd><span class="num">24,960字</span></dd></div>
-<div class="row"><dt>書き順</dt><dd><span class="num">6,712字</span></dd></div>
-<div class="row"><dt>意味</dt><dd><span class="num">41,017字</span></dd></div>
-<div class="row"><dt>旧字・異体字の対応</dt><dd><span class="num">317組</span></dd></div>
-<div class="row"><dt>名前・保険証の形</dt><dd><span class="num">5,152字・6,516形</span></dd></div>
-<div class="row"><dt>言葉</dt><dd><span class="num">180,892語</span></dd></div>
-<div class="row"><dt>地名・駅名</dt><dd><span class="num">125,096語</span></dd></div>
-<div class="row"><dt>町名</dt><dd><span class="num">95,732件</span></dd></div>
-<div class="row"><dt>医学・専門用語</dt><dd><span class="num">18,561語</span></dd></div>
-<div class="row"><dt>英和・和英</dt><dd><span class="num">45,366語</span></dd></div>
-<div class="row"><dt>ことわざ</dt><dd><span class="num">374</span></dd></div>
-<div class="row"><dt>四字熟語</dt><dd><span class="num">254</span></dd></div>
-<div class="row"><dt>魚へん</dt><dd><span class="num">108種</span></dd></div>
-</dl>
-</section>
-
-</main>
+<header><h1>ガリ勉　収録数</h1><p>手書きで引ける漢字辞書　ver.1.56（2026年11月25日）</p></header>
+<main><div class="c"><b>51,718<small>字</small></b><span>漢字</span></div><div class="c"><b>24,960<small>字</small></b><span>手書きで出せる漢字</span></div><div class="c"><b>6,712<small>字</small></b><span>書き順</span></div><div class="c"><b>41,017<small>字</small></b><span>意味</span></div><div class="c"><b>317<small>組</small></b><span>旧字・異体字の対応</span></div><div class="c"><b>6,516<small>形</small></b><span>名前・保険証の形</span></div><div class="c"><b>180,892<small>語</small></b><span>言葉</span></div><div class="c"><b>125,096<small>語</small></b><span>地名・駅名</span></div><div class="c"><b>95,732<small>件</small></b><span>町名</span></div><div class="c"><b>18,561<small>語</small></b><span>医学・専門用語</span></div><div class="c"><b>45,366<small>語</small></b><span>英和・和英</span></div><div class="c"><b>374<small></small></b><span>ことわざ</span></div><div class="c"><b>254<small></small></b><span>四字熟語</span></div><div class="c"><b>108<small>種</small></b><span>魚へん</span></div></main>
 </body>
 </html>

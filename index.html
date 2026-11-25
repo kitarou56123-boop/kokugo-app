@@ -118,6 +118,7 @@ label.btn{display:flex;align-items:center;justify-content:center;text-align:cent
 #wres .cand.old small{color:#b5651d}
 #wres .shape-t{grid-column:1/-1;margin:6px 0 0}
 #wres .cand.shape small{color:#2f6f8f}
+#wres .cand.pic .oldsvg{width:1.15em;height:1.15em;display:block;fill:currentColor;color:var(--ink)}
 h1.logo .ver{display:block;font-family:var(--sans);font-size:.72rem;font-weight:700;color:var(--sub);letter-spacing:.02em;margin-top:2px}
 .vrow{display:flex;flex-wrap:wrap;gap:6px}
 .vrow button{min-width:2.6em;padding:4px 8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;font-family:var(--serif);font-size:1.6rem;cursor:pointer}
@@ -495,7 +496,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.49（2026-11-25）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.50（2026-11-25）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -808,7 +809,7 @@ function setWordMode(on){
 
   renderWord();
 }
-function wordCandList(){ return [...wres.querySelectorAll("button.cand:not(.wdel)")].map(b=>b.firstChild?b.firstChild.textContent:b.textContent); }
+function wordCandList(){ return [...wres.querySelectorAll("button.cand:not(.wdel):not(.pic)")].map(b=>b.firstChild?b.firstChild.textContent:b.textContent); }
 function wordPick(k){
   const out=document.getElementById("wordOut"); if(out && !out.hidden){ out.hidden=true; }
   const alts=wordCandList();
@@ -1151,13 +1152,26 @@ function showCands(top,shapes,olds){
     else if(x.old){ b.classList.add("old"); b.title="旧字・異体字の候補"; small.textContent="旧字"; }
     else if(x.sure){ b.classList.add("shape"); b.title="エンジンにない珍しい字ですが、形がよく一致しました"; small.textContent="珍しい字"; }
     else { b.title=`一致度 ${(x.p*100).toFixed(1)}%`; small.textContent=`${(x.p*100).toFixed(1)}%`; }
-    b.appendChild(small); wres.appendChild(b); });
+    b.appendChild(small); wres.appendChild(b); picCand(x.char); });
   if(shapes.length){
     const t=document.createElement("p"); t.className="meta shape-t";
     t.textContent="形の近い字（名前・施設名などの珍しい字）"; wres.appendChild(t);
     shapes.forEach(x=>{ const b=candBtn(x.char); b.classList.add("shape"); b.title="形の近い字";
-      const small=document.createElement("small"); small.textContent="似た形"; b.appendChild(small); wres.appendChild(b); });
+      const small=document.createElement("small"); small.textContent="似た形"; b.appendChild(small); wres.appendChild(b); picCand(x.char); });
   }
+}
+/* ver.1.50：保険証などの形（芳の十十・楢の丷・榊の示へん）は、文字では出せないので、
+   候補にも絵で出す。押すと「〇〇と同じ字」と出して、その字を使う */
+function picCand(k){
+  const o=(typeof OLDFORM!=="undefined")&&OLDFORM[k]; if(!o) return;
+  const b=document.createElement("button"); b.type="button"; b.className="cand old pic";
+  b.title=`${o.t}（「${k}」と同じ字）`; b.innerHTML=o.svg.replace(/id="oldc"/,'id="oldc2"').replace(/url\(#oldc\)/,'url(#oldc2)');
+  const small=document.createElement("small"); small.textContent=`＝${k}`; b.appendChild(small);
+  b.onclick=()=>{
+    if(wordMode && b.closest("#wres")){ wordPick(k); wmeta.textContent=`この形は「${k}」と同じ字です。「${k}」を上の欄に入れました`; return; }
+    openSheet(k);
+  };
+  wres.appendChild(b);
 }
 
 /* 書いた線のうち、横に長い線を上から2本取り、下の線のほうが長ければ「土」（𠮷） */

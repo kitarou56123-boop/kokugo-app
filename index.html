@@ -495,7 +495,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.46（2026-11-25）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.47（2026-11-25）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -675,6 +675,7 @@ if(!MEAN.has("猋")) MEAN.set("猋","犬がむらがって走るようす。つ�
 /* ver.1.33：戸籍・人名・地名などで使われる、日本の字の一覧（MJ文字情報一覧表など）にあって、まだ入っていない字（約3万8千字）。
    読みと「〇〇の異体字」の情報を、開いた後に裏で読み込んで足す */
 const VARB_SRC="碵碩鬥斗僲仙爫爪牜牛犭犬𠂉刀𠆢入𠌫蹕𠍱集𠏹佛𠑊儼𠔉掬𠘨几𠝏剣𠠇斲𠦝卓𠫓突𠬝服𠮟叱𡈽土𡉴壚𡉻埣𡋤壗𡌛野𡙇缺𡚴妛𡧃宇𡴭乢𡵸嶧𡶒岪𡶜岸𡸳嶢𡸴嶮𡿺腦𢅻欆𢌞回𢛳徳𢡛懣𢦏哉𢪸捥𢭆抽𢭏擣𢭐撈𢮦撿𢰤掎𣆶晩𣇃舂𣏐杓𣏒簋𣏓杇𣏕杮𣏟林𣑥栲𣓤橈𣘸黴𣘺橋𣜜杤𣝣爵𣟿櫟𣠤欟𣪘簋𣳾泰𣴎承𣵀泥𣷹添𤄃濶𤇾枷𤢖魈𤰖畝𤴔疋𤸎暍𤹪傴𤺋疹𥁊盋𥁕温𥆩睨𥇥瞼𥈞瞞𥒎碊𥔎崎𥝱秭𥧄竈𥧔屁𥫣藇𥫱囤𥱋簗𥹢聞𥹥糖𥻘粼𥽜櫨𥿔紱𥿠補𦀗織𦉰罒𦊆岡𦍌羊𦐂翼𦙾脛𦚰脇𦜝臍𦣝頤𦣪塩𦥑臼𦧝唌𦫿艾𦰩茣𦱳茲𦹀茜𦹥蔭𦾔舊𦿷蘒𧐐鯽𧑉蛗𧜎襷𧦅謳𧪄記𧮳谽𧮾渓𧯇豅𧶠賣𧸐膩𧾷足𨂻蹈𨐌辛𨗉邃𨛗巷𨦇鋏𨨞斧𨩱鏟𨪙鏘𨫍鏸𨫝鑵𨯯鑓𨷻闌𨸟嶇𨻫隴𨼲蔭𨿸鶏𩙿食𩜙饒𩝐糍𩹉鯡𩻄鰥𩿎鴉𪂂翰𪃹鶺𪎌麳𪗱齟𪘂齧𪘚齬𪚲冉㐂喜㐬旒㐮襄㑨俣㑪儕㒒僕㓁罒㓇沃㓛功㔟勢㕝叓㕞刷㕣兗㕮哺㖦噇㖨嚕㗅胡㗴齗㘅銜㙊場㚑灵㚖澤㝡最㝢宇㝵得㞍尻㟁岸㟢崎㟴磈㟽磦㠀島㠯以㠶帆㡀雨㡡幮㣺心㤗泰㩳松㫖旨㫗厚㫪舂㬎顯㬜晉㬢曦㭭朳㮇栝㮈奈㮍箋㮤松㮶槊㯃桼㯍槳㯰植㰏篙㰦呿㳃淬㳒法㴑泝㴞滔㷀煢㷔焰㸅堲㸿犢㹦貂㹨狖㺃狗㽗畝㽲痏㽵莊㾮癀㿉痿㿗痿䀹眨䂓規䄅養䅈養䆴竈䆿寱䇦英䇳牋䈇罩䈎葉䉤籔䋆纑䋝纓䌂握䌫纜䏮脇䏰縯䐈殖䐗肚䐢脰䑓臺䑛舐䑺帆䒑艹䒳朶䔍篤䔥蕭䕃蔭䖝虫䖸蛾䘏恤䙥領䚯討䜌亦䝤獠䟽踈䡄軏䡎轤䢵鄖䦰鬮䧧嶬䧺雄䨄鵪䨩靈䪼準䬻餞䯊骼䯨敲䰗鬮䰠神䳄雌䴇鴒䵷哇丬爿亻人仫狇俦儔僡惠兠兜关關养養凃涂勊勀匇匆卧臥叴蹂呕嘔圡土埗埠墪墩壃疆复復嫰嫩嶤嶢巗岩巢巣廹迫开幵弞哂怢佚惮憚懵懜扡拖扻櫛抅拘抙捊挲抄捙拽揫揪摹模敄劺斄犛斵斫斸劚旼旻昺炳晈皎晣晢晥皖朁僭杍梓枒丫柛神栁柳栐柡栾欒桉案梙槵梴筵棃梨棷藪榰振槀槁槏廉槣敧槩概槶椢樳尋橺僩檔档檡菟櫳槞歬前歷歴歺歹毇鑿毈段毗毘氊毡沄澐沪滬泭桴泻瀉洀盤洤泉洴泙浘潙浛淦涀淦涁滲涊抻涫盥涮沕淂得淐蛟湌餐滙匯漥洼潠噀澘潸濉睢灇潨炟燬焈熙熖焔爕燮牗牖犰犱猳豭玊玉玨珏璗瑒璺璵疌捷疰注疷胝痝厖瘘瘻瘨顚皞昊皡暭皶齇睘還睼睇瞤瞬瞩矚砙砰砬磖硑瓶磹簟礮炮礰靂秌秋窾款竧軀笻筇筹籌籅藇籗罩籯籝緀紪繵纏耂老聃耽肙蜎肤膚胵胝脍膾脽臀艹艸芓秄茌茬荣榮菡莟萗策蔾藜藡荻蘤花蚝蠔蝼螻覀西訡吟諐愆謍嶸譑撟譩噫譿慧踌躊躶裸轊槥郲萊釄醿鈗鏸鋷銸鍫鍬鏵釪閆閻阴陰隽雋霔澍霶雱霻靊靇隆靍鸖頄鼽飠食飱飧馞馟驘騾魶鰨鱥鱖鱭鮆鱺鱧鶙鶗鶽隼鷀鶿麽么欄欄廊廊朗朗虜虜殺殺類類隆隆﨑崎﨔欅﨟臈﨤返都都爫爪";
+const MEAN_ADD={'鵣':'鳥の名前。戸籍・名前では「う」と読み、「鵜（う）」と同じように使われることがある。'};
 const OLDFORM={'芳':'<svg class="oldsvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 -880 1000 1000"><g transform="scale(1,-1)"><clipPath id="oldc"><rect x="0" y="-200" width="1000" height="755"/></clipPath><path clip-path="url(#oldc)" d="M56 717 63 688H314V579H324C351 579 378 588 378 597V688H616V581H627C659 582 681 595 681 601V688H920C934 688 944 693 946 703C915 734 859 778 859 778L812 717H681V801C706 804 714 814 716 828L616 837V717H378V801C404 804 413 814 414 828L314 837V717ZM55 477 64 448H379C364 250 314 70 35 -64L46 -80C291 5 384 129 425 278H713C699 148 675 36 645 13C634 4 624 2 603 2C579 2 482 11 430 15L429 -2C477 -9 531 -20 549 -31C565 -42 570 -60 570 -78C618 -79 658 -67 686 -45C733 -8 766 121 778 269C799 272 812 277 818 284L744 347L705 307H432C443 352 449 399 454 448H917C931 448 941 453 944 464C909 496 853 539 853 539L805 477H521V592C543 596 551 605 553 617L456 627V477Z"/><g transform="translate(70,530) scale(.44,.38)"><path d="M32 471 40 442H432V-83H455C506 -83 560 -52 560 -38V442H940C955 442 966 447 969 458C921 504 837 572 837 572L762 471H560V794C593 798 601 811 604 828L432 844V471Z"/></g><g transform="translate(490,530) scale(.44,.38)"><path d="M32 471 40 442H432V-83H455C506 -83 560 -52 560 -38V442H940C955 442 966 447 969 458C921 504 837 572 837 572L762 471H560V794C593 798 601 811 604 828L432 844V471Z"/></g></g></svg>'};
 let KEXT_READY=false;
 const KEXT_P=(async()=>{
@@ -690,6 +691,11 @@ const KEXT_P=(async()=>{
     }
     KEXT_READY=true;
   }catch(e){}
+  for(const k in MEAN_ADD) if(!MEAN.has(k)) MEAN.set(k,MEAN_ADD[k]);
+  /* ver.1.47：戸籍の字の一覧（MJ文字情報）にある訓読み・名前の読みのうち、まだ入っていないもの（鵣＝う・つぐみ など約6千字分） */
+  try{ const b=await getData("mjr-1.bin"); const t=await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    for(const l of t.split("\n")){ const [k,ks]=l.split("|"); const e=DB.get(k); if(!e||!ks) continue; const add=ks.split(",").filter(x=>x&&!e.kun.includes(x));
+      if(!add.length) continue; e.kun=[...e.kun,...add]; e.mjk=add; for(const r of add) addIdx(r,k); } }catch(e){}
   /* ver.1.45：読みがない異体字（㟢など）は、元の字（崎）の読みを使い、「〇〇の異体字」と出す */
   try{ const VB=new Map(); const a=[...VARB_SRC]; for(let i=0;i+1<a.length;i+=2) VB.set(a[i],a[i+1]);
     for(const [k,e] of DB){ if(e.on.length||e.kun.length) continue;

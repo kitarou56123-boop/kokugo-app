@@ -496,7 +496,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.57（2026-11-26）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.58（2026-11-26）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -684,6 +684,34 @@ for(const k in OLDFORM90){ if(OLDFORM[k]) continue; OLDFORM[k]={t:'保険証な�
 /* ver.1.56：名前・保険証などで使われる別の形。役所の字の一覧（MJ文字情報・IPAmj明朝）の約5,100字・6,500形を絵で出す。使う時に裏で読み込む
    f：b＝違いがはっきり（候補にも出す）、m＝中くらい、s＝細かい違い（字の画面で「細かい違い」を開いた時だけ） */
 const ALTFORM=new Map(); let picN=0;
+/* ver.1.58：絵の形をコピーできるようにする。
+   文字でコピー＝字＋形の指定（異体字セレクタ）。Wordなど対応しているソフトだけでその形になる。
+   画像でコピー＝絵をそのまま画像で。LINE・メール・Wordなど、どこにでも貼れる */
+const OLDVS={"倦":"E0100","僅":"E0100","儲":"E0100","兎":"E0100","冤":"E0100","卿":"E0101","厩":"E0100","叉":"E0100","叛":"E0100","叟":"E0100","咬":"E0100","哨":"E0100","喰":"E0100","嘲":"E0100","噂":"E0100","噌":"E0100","囀":"E0100","堵":"E0100","娩":"E0100","屑":"E0100","屠":"E0100","巷":"E0100","庖":"E0100","廟":"E0100","廻":"E0100","徘":"E0100","徽":"E0100","恢":"E0100","愈":"E0100","扁":"E0100","挺":"E0100","挽":"E0100","捗":"E0100","捲":"E0100","揃":"E0100","摺":"E0100","撰":"E0100","擢":"E0100","斧":"E0100","晦":"E0100","杓":"E0100","杖":"E0100","梗":"E0100","楢":"E0100","楯":"E0100","榊":"E0100","榔":"E0100","槌":"E0100","樋":"E0100","樽":"E0100","櫛":"E0101","歎":"E0100","汲":"E0100","淫":"E0100","溢":"E0100","溺":"E0100","漣":"E0101","瀕":"E0100","瀞":"E0100","瀦":"E0100","灘":"E0100","灸":"E0100","灼":"E0100","煉":"E0101","煎":"E0100","煽":"E0100","爺":"E0100","牌":"E0100","牙":"E0100","狡":"E0100","猷":"E0100","甑":"E0100","甕":"E0100","甦":"E0100","疼":"E0100","瞥":"E0100","祁":"E0100","祇":"E0100","禰":"E0100","秤":"E0100","稗":"E0100","穿":"E0100","竈":"E0100","笈":"E0100","筵":"E0100","箭":"E0100","箸":"E0100","篇":"E0100","篝":"E0100","簾":"E0100","籾":"E0100","粂":"E0100","翫":"E0100","翰":"E0100","腱":"E0100","腿":"E0100","艘":"E0100","芒":"E0100","芦":"E0100","茨":"E0100","葛":"E0100","蓬":"E0100","蔑":"E0100","蔽":"E0100","薩":"E0100","薯":"E0100","藷":"E0100","虔":"E0100","蛸":"E0100","蜃":"E0100","蝕":"E0100","蠅":"E0100","襖":"E0100","訊":"E0100","訝":"E0100","註":"E0100","詮":"E0100","誹":"E0100","諺":"E0100","謎":"E0100","謬":"E0100","豹":"E0100","賭":"E0100","辻":"E0100","辿":"E0100","迂":"E0100","迄":"E0100","迦":"E0100","逗":"E0100","這":"E0100","逢":"E0100","逼":"E0100","遁":"E0100","遜":"E0100","遡":"E0100","鄭":"E0100","酋":"E0100","釜":"E0100","錆":"E0100","鍵":"E0100","鎚":"E0100","鑓":"E0100","隙":"E0100","靱":"E0100","鞄":"E0100","鞘":"E0100","鞭":"E0100","飴":"E0100","餅":"E0100","餌":"E0100","餐":"E0100","饗":"E0100","駁":"E0100","騙":"E0100","鮫":"E0100","鯖":"E0100","鰯":"E0100","鱒":"E0100","鴉":"E0100","鵠":"E0100"};
+function cpyWrap(svg,ch,v){ return '<span class="cpy" role="button" tabindex="0" data-ch="'+ch+'" data-vs="'+(v||"")+'">'+svg+'</span>'; }
+function cpyToast(m){ let t=document.getElementById("cpytoast"); if(!t){ t=document.createElement("div"); t.id="cpytoast"; document.body.append(t); } t.textContent=m; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2600); }
+async function cpyImage(svgEl){
+  const c=svgEl.cloneNode(true); c.setAttribute("width","256"); c.setAttribute("height","256"); c.setAttribute("xmlns","http://www.w3.org/2000/svg");
+  const src=new XMLSerializer().serializeToString(c).replace(/currentColor/g,"#000");
+  const img=new Image(); img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(src); await img.decode();
+  const cv=document.createElement("canvas"); cv.width=cv.height=256; const g=cv.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,256,256);
+  g.drawImage(img,0,0,256,256);
+  const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
+  try{ await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]); cpyToast("画像でコピーしました"); }
+  catch(e){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="katachi.png"; a.click(); cpyToast("画像として保存しました"); }
+}
+function cpyMenu(el){
+  document.getElementById("cpymenu")?.remove();
+  const ch=el.dataset.ch, v=el.dataset.vs, m=document.createElement("div"); m.id="cpymenu";
+  let h='<div class="cpybox"><div class="cpyt">この形をコピー</div>';
+  if(v) h+='<button type="button" data-a="t">文字でコピー<small>Wordなど対応しているソフトだけで、この形になります</small></button>';
+  h+='<button type="button" data-a="i">画像でコピー<small>LINE・メール・Wordなど、どこにでも貼れます</small></button><button type="button" data-a="x" class="cpyx">やめる</button></div>';
+  m.innerHTML=h; document.body.append(m);
+  m.onclick=async e=>{ const b=e.target.closest("button"); if(!b && e.target!==m) return; m.remove(); if(!b) return;
+    if(b.dataset.a==="t"){ const txt=ch+String.fromCodePoint(parseInt(v,16)); try{ await navigator.clipboard.writeText(txt); cpyToast("文字でコピーしました"); }catch(_){ cpyToast("コピーできませんでした"); } }
+    else if(b.dataset.a==="i"){ try{ await cpyImage(el.querySelector("svg")); }catch(_){ cpyToast("コピーできませんでした"); } } };
+}
+document.addEventListener("click",e=>{ const el=e.target.closest&&e.target.closest("#sinfo .cpy"); if(el) cpyMenu(el); });
 function altSvg(x){ const vb=x.s==="n"?"0 -880 1000 1000":"0 -450 512 512"; return '<svg class="oldsvg" xmlns="http://www.w3.org/2000/svg" viewBox="'+vb+'"><g transform="scale(1,-1)"><path d="'+x.d+'"/></g></svg>'; }
 setTimeout(async()=>{ try{ const b=await getData("mjv-1.bin"); const t=await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
   for(const l of t.split("\n")){ const [k,v,f,s,d]=l.split("\t"); if(!k||!d) continue; if(!ALTFORM.has(k)) ALTFORM.set(k,[]); ALTFORM.get(k).push({v,f,s,d}); } }catch(e){} },800);
@@ -4589,13 +4617,13 @@ function radicalOf(k){
     }catch(e){}
     // ver.1.46：草かんむりを十十と書く昔の形（保険証・戸籍などで使われる）。文字では出せないので絵で見せる
     try{ const o=OLDFORM[k]; if(o){ const dl=document.getElementById("sinfo"); const t=document.createElement("dt"); t.textContent=o.t; const d=document.createElement("dd");
-      d.innerHTML=o.svg+'<div class="oldnote">'+o.n+(o.nc!=null?o.nc:'文字としては「'+k+'」と同じなので、コピーすると今の形になります。')+'</div>'; dl.append(t,d); } }catch(e){}
+      d.innerHTML=cpyWrap(o.svg,k,OLDVS[k])+'<div class="oldnote">'+o.n+(o.nc!=null?o.nc:'')+'絵を押すとコピーできます。</div>'; dl.append(t,d); } }catch(e){}
     // ver.1.56：名前・保険証などで使われる別の形（役所の字の一覧の形を全部並べる。細かい違いはボタンで開く）
     try{ const a=ALTFORM.get(k); if(a&&a.length){ const dl=document.getElementById("sinfo"); const t=document.createElement("dt"); t.textContent="ほかの形"; const d=document.createElement("dd");
       const big=a.filter(x=>x.f!=="s"), small=a.filter(x=>x.f==="s");
-      let h=big.length?'<div class="altrow">'+big.map(altSvg).join("")+'</div>':'';
-      if(small.length) h+='<button type="button" class="altmore">細かい違いの形も見る（'+small.length+'）</button><div class="altrow" hidden>'+small.map(altSvg).join("")+'</div>';
-      h+='<div class="oldnote">戸籍・保険証などで使われる形です（役所の字の一覧より）。文字としては「'+k+'」と同じなので、コピーすると今の形になります。</div>';
+      let h=big.length?'<div class="altrow">'+big.map(x=>cpyWrap(altSvg(x),k,x.v)).join("")+'</div>':'';
+      if(small.length) h+='<button type="button" class="altmore">細かい違いの形も見る（'+small.length+'）</button><div class="altrow" hidden>'+small.map(x=>cpyWrap(altSvg(x),k,x.v)).join("")+'</div>';
+      h+='<div class="oldnote">戸籍・保険証などで使われる形です（役所の字の一覧より）。絵を押すとコピーできます。</div>';
       d.innerHTML=h; const mb=d.querySelector(".altmore"); if(mb) mb.onclick=()=>{ mb.nextElementSibling.hidden=false; mb.remove(); };
       dl.append(t,d); } }catch(e){}
     // ver.1.37：文字コード（控えめに一番下へ）
@@ -4603,7 +4631,16 @@ function radicalOf(k){
       const t=document.createElement("dt"); t.className="ucode"; t.textContent="文字コード"; const d=document.createElement("dd"); d.className="ucode"; d.textContent="U+"+cp; dl.append(t,d); }catch(e){} };
 })();
 </script>
-<style>#sinfo .oldsvg{width:4.2em;height:4.2em;display:block;fill:var(--ink);color:var(--ink)}#sinfo .altrow{display:flex;flex-wrap:wrap;gap:.5em}#sinfo .altrow .oldsvg{width:3.4em;height:3.4em}#sinfo .altmore{margin:.5em 0 .3em;padding:.45em .9em;border:1px solid var(--line,#ccd);border-radius:10px;background:#fff;color:var(--ink);font-size:.85rem}#sinfo .oldnote{font-size:.75rem;color:var(--sub);line-height:1.5;margin-top:2px}
+<style>#sinfo .oldsvg{width:4.2em;height:4.2em;display:block;fill:var(--ink);color:var(--ink)}#sinfo .cpy{display:inline-block;cursor:pointer;border-radius:8px}#sinfo .cpy:active{background:#e3ecea}
+#cpymenu{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
+#cpymenu .cpybox{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:14px 14px 22px}
+#cpymenu .cpyt{font-weight:700;text-align:center;margin-bottom:10px;color:#263238}
+#cpymenu button{display:block;width:100%;text-align:left;padding:12px 14px;margin:8px 0;border:1px solid #d3d8d6;border-radius:12px;background:#fff;font-size:1rem;color:#263238}
+#cpymenu button small{display:block;color:#607d8b;font-size:.78rem;margin-top:2px}
+#cpymenu .cpyx{text-align:center;background:#eef0ef}
+#cpytoast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#263238;color:#fff;padding:10px 18px;border-radius:999px;font-size:.9rem;opacity:0;transition:opacity .2s;z-index:10000;pointer-events:none}
+#cpytoast.on{opacity:1}
+#sinfo .altrow{display:flex;flex-wrap:wrap;gap:.5em}#sinfo .altrow .oldsvg{width:3.4em;height:3.4em}#sinfo .altmore{margin:.5em 0 .3em;padding:.45em .9em;border:1px solid var(--line,#ccd);border-radius:10px;background:#fff;color:var(--ink);font-size:.85rem}#sinfo .oldnote{font-size:.75rem;color:var(--sub);line-height:1.5;margin-top:2px}
 #sinfo .ucode{font-size:.75rem;color:var(--sub);opacity:.8}
 #sinfo .radc{font-family:var(--serif);font-size:1.35em;font-weight:700;color:#2f5d62}</style>
 <script>

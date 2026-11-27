@@ -499,8 +499,8 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.69（2026-11-27）</p>
-  <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.70（2026-11-27）</p>
+  <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
 
@@ -786,7 +786,7 @@ const tabs={write:document.getElementById("t-write"),read:document.getElementByI
 let curTabN="write";
 function resetTab(n){ try{
   const $=id=>document.getElementById(id), ev=el=>el&&el.dispatchEvent(new Event("input",{bubbles:true}));
-  if(n==="write"){ $("clear")?.click(); if(typeof wordClear==="function") wordClear(); }
+  if(n==="write"){ $("clear")?.click(); if(typeof wordClear==="function") wordClear(); if(typeof window.partsReset==="function") window.partsReset(); }
   else if(n==="read"){ const q=$("q"); if(q&&q.value){ if($("qClear")) $("qClear").click(); else { q.value=""; ev(q); } } }
   else if(n==="cam"){ $("camView").hidden=true; $("selbox").hidden=true; ["camRes","wordInfo"].forEach(i=>{ if($(i)) $(i).innerHTML=""; }); ["cstat","cmeta"].forEach(i=>{ if($(i)) $(i).textContent=""; });
     try{ if(typeof photo!=="undefined"&&photo){ photo.width=0; photo.height=0; photo=null; } if(typeof photoHi!=="undefined") photoHi=null; }catch(_){}
@@ -2068,7 +2068,7 @@ function guessReading(raw){
   const cs=[...raw]; const n=cs.length; if(n<2||n>20||!cs.every(c=>/\p{Script=Han}|々/u.test(c))) return null;
   const ex=new Map(); try{ for(const [w,rs] of EXTRA_WORDS) ex.set(w,rs[0]); }catch(e){}
   const norm=w=>[...w].map(c=>{ let b=null; try{ b=VAR_OLD2NEW.get(c); }catch(e){} return b||(DB.get(c)&&DB.get(c).base)||c; }).join("");   // 髙→高、﨑→崎 など
-  const known=w=>{ for(const x of [w,norm(w)]){ if(ex.has(x)) return ex.get(x); try{ const r=dictReading(x); if(r) return toHira(r); }catch(e){} } return ""; };
+  const known=w=>{ for(const x of [w,norm(w)]){ if(ex.has(x)) return ex.get(x); if(YOMITAG.get(x)==="g") continue; try{ const r=dictReading(x); if(r) return toHira(r); }catch(e){} } return ""; };
   const one=c=>{ if(c==="々") return null; const e=DB.get(c); if(!e) return null; const r=(e.on[0]||e.kun[0]||"").replace(/[.\-].*$/,""); return r?toHira(r):null; };
   // 少ない区切りで読める組み合わせを探す（1字ずつの読みは「目安」なので重みを重くする）
   const best=new Array(n+1).fill(null); best[0]={cost:0,parts:[]};
@@ -2333,6 +2333,11 @@ function loadYomi(){
     /* ver.1.33：辞書（JMdict）と地名・駅名（JMnedict・郵便番号・JRの駅）のうち、まだ入っていなかった約13万5千語 */
     try{ const b2=await getData("yomix-1.bin"); const t2=await new Response(new Blob([b2]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
       for(const l of t2.split("\n")){ const [w,r,tg]=l.split("|"); if(!w||!r||m.has(w)) continue; const rs=r.split(","); m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); if(tg) YOMITAG.set(w,tg); } }catch(e){}
+    /* ver.1.70：名字・名前の読み（JMnedict、約20万語）。地名と同じ字の名字（勘解由小路など）は、地名の読みに名字の読みを足す */
+    try{ const b3=await getData("names-1.bin"); const t3=await new Response(new Blob([b3]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+      for(const l of t3.split("\n")){ const [w,r,tg]=l.split("|"); if(!w||!r) continue; const rs=r.split(",");
+        if(tg==="N"){ if(!m.has(w)) continue; const a=alt.get(w)||[]; for(const x of rs) if(x!==m.get(w)&&!a.includes(x)) a.push(x); alt.set(w,a); const o=YOMITAG.get(w); YOMITAG.set(w,o==="s"?"sn":"pn"); continue; }
+        if(m.has(w)) continue; m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); YOMITAG.set(w,tg); } }catch(e){}
     YOMI=m; YOMIALT=alt; return m;
   })().catch(e=>{ YOMIP=null; throw e; });
   return YOMIP;
@@ -3042,7 +3047,7 @@ wordBtn.onclick=async()=>{
     // v90：読みがなの辞書にしかない言葉（秋葵＝おくら など）も探す
     try{
       await predWords(); await loadYomi();
-      const addW=(w,r)=>{ if(w && !found.has(w)){ const tg=YOMITAG.get(w); const all=[r,...((YOMIALT&&YOMIALT.get(w))||[])].filter((x,i,a)=>x&&a.indexOf(x)===i); found.set(w,{word:w,reading:all.join("・"),meaning:(tg==="p"?"【地名】":tg==="s"?"【駅名】":"")+[...w].filter(c=>meaningOf(c)).map(c=>`${c}：${meaningOf(c).text}`).join("　")}); } };
+      const addW=(w,r)=>{ if(w && !found.has(w)){ const tg=YOMITAG.get(w); const all=[r,...((YOMIALT&&YOMIALT.get(w))||[])].filter((x,i,a)=>x&&a.indexOf(x)===i); found.set(w,{word:w,reading:all.join("・"),meaning:(({p:"【地名】",s:"【駅名】",n:"【名字】",g:"【名前】",pn:"【地名・名字】",sn:"【駅名・名字】"}[tg]||""))+[...w].filter(c=>meaningOf(c)).map(c=>`${c}：${meaningOf(c).text}`).join("　")}); } };
       if(hasKanji){ const r=(PREDW.read.get(raw))||YOMI.get(raw); if(r) addW(raw,r); }
       else {
         if(!YOMIREV){ YOMIREV=new Map(); const ad=(r,w)=>{ const k=norm(r); if(!YOMIREV.has(k)) YOMIREV.set(k,[]); YOMIREV.get(k).push(w); };
@@ -4308,6 +4313,8 @@ const KRAD_SRC="𱁬一雨二厶月立竜田乙\n䨺一雨二厶\n䨻雨田\n�
     if(m==="parts" && !built){ buildGrid(); built=true; update(); }
   }
   wmHand.onclick=()=>setMode("hand"); wmParts.onclick=()=>setMode("parts");
+  /* ver.1.70：別の機能に移ったら、選んだ部品を消して「手で書く」に戻す */
+  window.partsReset=()=>{ if(sel.length){ sel=[]; if(built) update(); } setMode("hand"); };
 
   const pbtns=new Map();
   function buildGrid(){
@@ -4684,9 +4691,12 @@ function radicalOf(k){
   for(const id of ["soBtn","histBtn","helpBtn"]){ const b=document.getElementById(id); if(b) b.addEventListener("click",away); }
   document.addEventListener("click",e=>{ if(e.target.closest&&e.target.closest(".kitem,.fcell,.fish button,#klist button")) away(); },true);
   window.addEventListener("popstate",()=>{
+    /* ver.1.70：字の画面などが開いている時の「戻る」は、それを閉じるだけ（調べていた画面と結果はそのまま） */
+    let had=false; try{ had=!!document.querySelector(".sheet.open")||["so","hs"].some(id=>{ const x=document.getElementById(id); return x&&x.classList.contains("open"); }); }catch(e){}
     try{ closeSheet(); }catch(e){}
     for(const id of ["so","hs"]){ const x=document.getElementById(id); if(x&&x.classList.contains("open")){ const c=x.querySelector(".close"); if(c) c.click(); else x.classList.remove("open"); } }
     try{ document.getElementById("hsheet").classList.remove("open"); document.getElementById("sbg").classList.remove("open"); }catch(e){}
+    if(had && typeof curTabN!=="undefined" && curTabN!=="write"){ away(); return; }
     try{ _st("write"); }catch(e){}
     window.scrollTo({top:0});
   });

@@ -1,6 +1,6 @@
 // ガリ勉：インストールアプリ用。
 // アプリ自身のファイルは毎回新しい版を確かめる。辞書データ（*.bin）と、手書き・カメラの読み取り部品（外部）は一度取ったら保存して使う
-const CACHE = "gariben-v165";
+const CACHE = "gariben-v166";
 const DATA = "gariben-data";   // 辞書データ（*.bin）は名前ごとに中身が変わらないので、別の箱に取っておく
 const EXT = "gariben-ext";     // ver.1.24：手書き・カメラの読み取り部品（電波のない所でも使えるように保存）
 const EXT_HOSTS = ["huggingface.co", "cdn.jsdelivr.net", "tessdata.projectnaptha.com", "fonts.googleapis.com", "fonts.gstatic.com"];
@@ -31,10 +31,19 @@ self.addEventListener("fetch", e => {
     return;
   }
   // アプリ本体は毎回「新しい版が出ていないか」をGitHubに確かめる（電波がなければ保存してある版を使う）
-  e.respondWith(
-    fetch(e.request, { cache: "no-cache" }).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
-      return res;
-    }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match("./index.html")).then(r => r || Response.error()))
-  );
+  // ver.1.64：電波が弱くて3秒たっても返事がない時は、保存してある版ですぐ開く。新しい版は裏で受け取って次から使う
+  let store = Promise.resolve();
+  const net = fetch(e.request, { cache: "no-cache" }).then(res => {
+    if (res.ok) { const copy = res.clone(); store = caches.open(CACHE).then(c => c.put(e.request, copy)); }
+    return res;
+  });
+  const saved = () => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match("./index.html"));
+  e.respondWith(new Promise(resolve => {
+    let done = false;
+    const give = r => { if (!done && r) { done = true; resolve(r); } };
+    const t = setTimeout(() => saved().then(r => give(r)), 3000);
+    net.then(r => { clearTimeout(t); give(r); })
+       .catch(() => { clearTimeout(t); saved().then(r => { if (r) give(r); else if (!done) { done = true; resolve(Response.error()); } }); });
+  }));
+  e.waitUntil(net.then(() => store).catch(() => {}));
 });

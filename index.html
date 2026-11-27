@@ -499,7 +499,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.70（2026-11-27）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.71（2026-11-27）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -782,6 +782,9 @@ function meaningOf(k){
 
 /* tabs */
 const tabs={write:document.getElementById("t-write"),read:document.getElementById("t-read"),kot:document.getElementById("t-kot"),cam:document.getElementById("t-cam"),eng:document.getElementById("t-eng"),fish:document.getElementById("t-fish")};
+/* ver.1.71：アプリを開いて少ししたら、読みの辞書・地名・専門用語を裏で先に読み込んでおく（最初に調べる時に待たないように） */
+setTimeout(()=>{ const go=async()=>{ for(const f of [()=>predWords(),()=>loadYomi(),()=>buildYomiRev(),()=>loadMed(),()=>loadPlaces()]){ try{ await f(); }catch(e){} await new Promise(r=>setTimeout(r,50)); } };
+  if(window.requestIdleCallback) requestIdleCallback(()=>go(),{timeout:3000}); else go(); },3500);
 /* ver.1.65：別の機能に移ったら、それまでの画面の入力・写真・結果を消す（戻った時にまっさらで使える） */
 let curTabN="write";
 function resetTab(n){ try{
@@ -2324,20 +2327,31 @@ function dictReading(w){
 }
 /* v89：読みがなの辞書が知らない言葉（秋葵＝おくら、蒲公英など）の読み。v91：国語辞典の見出し（心太＝ところてん など）を加えて約18万語 */
 let YOMI=null, YOMIALT=null, YOMIP=null, YOMIREV=null; const YOMITAG=new Map();
+/* ver.1.71：大きな辞書を読む時、3万行ごとに一息つく（読み込み中も画面が固まらないように） */
+async function eachLine(txt,fn){ let i=0,n=0; const L=txt.length; while(i<L){ let j=txt.indexOf("\n",i); if(j<0) j=L; fn(txt.slice(i,j)); i=j+1; if(++n%30000===0) await new Promise(r=>setTimeout(r,0)); } }
+function yomiRevKey(r){ return toHira(String(r||"")).replace(/[ー・\s]/g,""); }
+async function buildYomiRev(){
+  if(YOMIREV) return YOMIREV;
+  await predWords(); await loadYomi(); if(YOMIREV) return YOMIREV;
+  const R=new Map(); const ad=(r,w)=>{ const k=yomiRevKey(r); let a=R.get(k); if(!a) R.set(k,a=[]); a.push(w); };
+  for(const [w,r] of PREDW.read) ad(r,w); for(const [w,rs] of PREDW.alt) for(const r of rs) ad(r,w);
+  let n=0; for(const [w,r] of YOMI){ if(!PREDW.read.has(w)){ ad(r,w); for(const r2 of (YOMIALT.get(w)||[])) ad(r2,w); } if(++n%40000===0) await new Promise(r=>setTimeout(r,0)); }
+  if(!YOMIREV) YOMIREV=R; return YOMIREV;
+}
 function loadYomi(){
   if(!YOMIP) YOMIP=(async()=>{
     const bin=await getData("yomi-2.bin");
     const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
     const m=new Map(), alt=new Map();
-    for(const l of txt.split("\n")){ const i=l.indexOf("|"); if(i<1) continue; const rs=l.slice(i+1).split(","); const w=l.slice(0,i); m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); }
+    await eachLine(txt,l=>{ const i=l.indexOf("|"); if(i<1) return; const rs=l.slice(i+1).split(","); const w=l.slice(0,i); m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); });
     /* ver.1.33：辞書（JMdict）と地名・駅名（JMnedict・郵便番号・JRの駅）のうち、まだ入っていなかった約13万5千語 */
     try{ const b2=await getData("yomix-1.bin"); const t2=await new Response(new Blob([b2]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-      for(const l of t2.split("\n")){ const [w,r,tg]=l.split("|"); if(!w||!r||m.has(w)) continue; const rs=r.split(","); m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); if(tg) YOMITAG.set(w,tg); } }catch(e){}
+      await eachLine(t2,l=>{ const [w,r,tg]=l.split("|"); if(!w||!r||m.has(w)) return; const rs=r.split(","); m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); if(tg) YOMITAG.set(w,tg); }); }catch(e){}
     /* ver.1.70：名字・名前の読み（JMnedict、約20万語）。地名と同じ字の名字（勘解由小路など）は、地名の読みに名字の読みを足す */
     try{ const b3=await getData("names-1.bin"); const t3=await new Response(new Blob([b3]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-      for(const l of t3.split("\n")){ const [w,r,tg]=l.split("|"); if(!w||!r) continue; const rs=r.split(",");
-        if(tg==="N"){ if(!m.has(w)) continue; const a=alt.get(w)||[]; for(const x of rs) if(x!==m.get(w)&&!a.includes(x)) a.push(x); alt.set(w,a); const o=YOMITAG.get(w); YOMITAG.set(w,o==="s"?"sn":"pn"); continue; }
-        if(m.has(w)) continue; m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); YOMITAG.set(w,tg); } }catch(e){}
+      await eachLine(t3,l=>{ const [w,r,tg]=l.split("|"); if(!w||!r) return; const rs=r.split(",");
+        if(tg==="N"){ if(!m.has(w)) return; const a=alt.get(w)||[]; for(const x of rs) if(x!==m.get(w)&&!a.includes(x)) a.push(x); alt.set(w,a); const o=YOMITAG.get(w); YOMITAG.set(w,o==="s"?"sn":"pn"); return; }
+        if(m.has(w)) return; m.set(w,rs[0]); if(rs.length>1) alt.set(w,rs.slice(1)); YOMITAG.set(w,tg); }); }catch(e){}
     YOMI=m; YOMIALT=alt; return m;
   })().catch(e=>{ YOMIP=null; throw e; });
   return YOMIP;
@@ -3050,8 +3064,7 @@ wordBtn.onclick=async()=>{
       const addW=(w,r)=>{ if(w && !found.has(w)){ const tg=YOMITAG.get(w); const all=[r,...((YOMIALT&&YOMIALT.get(w))||[])].filter((x,i,a)=>x&&a.indexOf(x)===i); found.set(w,{word:w,reading:all.join("・"),meaning:(({p:"【地名】",s:"【駅名】",n:"【名字】",g:"【名前】",pn:"【地名・名字】",sn:"【駅名・名字】"}[tg]||""))+[...w].filter(c=>meaningOf(c)).map(c=>`${c}：${meaningOf(c).text}`).join("　")}); } };
       if(hasKanji){ const r=(PREDW.read.get(raw))||YOMI.get(raw); if(r) addW(raw,r); }
       else {
-        if(!YOMIREV){ YOMIREV=new Map(); const ad=(r,w)=>{ const k=norm(r); if(!YOMIREV.has(k)) YOMIREV.set(k,[]); YOMIREV.get(k).push(w); };
-          for(const [w,r] of PREDW.read) ad(r,w); for(const [w,rs] of PREDW.alt) for(const r of rs) ad(r,w); for(const [w,r] of YOMI) if(!PREDW.read.has(w)){ ad(r,w); for(const r2 of (YOMIALT.get(w)||[])) ad(r2,w); } }
+        await buildYomiRev();
         for(const w of [...new Set(YOMIREV.get(n)||[])].slice(0,15)) addW(w,n);
       }
     }catch(e){}

@@ -499,7 +499,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.64（2026-11-27）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.65（2026-11-27）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -776,7 +776,20 @@ function meaningOf(k){
 
 /* tabs */
 const tabs={write:document.getElementById("t-write"),read:document.getElementById("t-read"),kot:document.getElementById("t-kot"),cam:document.getElementById("t-cam"),eng:document.getElementById("t-eng"),fish:document.getElementById("t-fish")};
+/* ver.1.65：別の機能に移ったら、それまでの画面の入力・写真・結果を消す（戻った時にまっさらで使える） */
+let curTabN="write";
+function resetTab(n){ try{
+  const $=id=>document.getElementById(id), ev=el=>el&&el.dispatchEvent(new Event("input",{bubbles:true}));
+  if(n==="write"){ $("clear")?.click(); if(typeof wordClear==="function") wordClear(); }
+  else if(n==="read"){ const q=$("q"); if(q&&q.value){ if($("qClear")) $("qClear").click(); else { q.value=""; ev(q); } } }
+  else if(n==="cam"){ $("camView").hidden=true; $("selbox").hidden=true; ["camRes","wordInfo"].forEach(i=>{ if($(i)) $(i).innerHTML=""; }); ["cstat","cmeta"].forEach(i=>{ if($(i)) $(i).textContent=""; });
+    try{ if(typeof photo!=="undefined"&&photo){ photo.width=0; photo.height=0; photo=null; } if(typeof photoHi!=="undefined") photoHi=null; }catch(_){}
+    const pc=$("pc"); if(pc){ pc.width=0; pc.height=0; } ["camIn","picIn"].forEach(i=>{ if($(i)) $(i).value=""; }); }
+  else if(n==="eng"){ const e=$("eq"); if(e&&e.value){ e.value=""; ev(e); } }
+  else if(n==="kot"){ const k=$("kq"); if(k&&k.value){ k.value=""; ev(k); } }
+}catch(e){} }
 function showTab(n){
+  if(n!==curTabN){ resetTab(curTabN); curTabN=n; }
   if(n==="read" && typeof restoreReadWraps==="function") restoreReadWraps();
   for(const [k,b] of Object.entries(tabs)) b.setAttribute("aria-selected",k===n);
   document.getElementById("p-write").hidden=n!=="write";

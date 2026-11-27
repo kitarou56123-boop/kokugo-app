@@ -499,7 +499,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.66（2026-11-27）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.67（2026-11-27）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -828,19 +828,22 @@ function cleanJSON(t){ t=t.replace(/```json|```/g,"").trim(); const a=t.search(/
 /* drawing */
 const pad=document.getElementById("pad"), cv=document.getElementById("cv"), ctx=cv.getContext("2d"), hint=document.getElementById("hint");
 let strokes=[], cur=null, recTimer=null, recId=0, recCtl=null;
-function size(){ const r=pad.getBoundingClientRect(), d=devicePixelRatio||1; cv.width=r.width*d; cv.height=r.height*d; redraw(); }
+/* ver.1.67：書く枠が隠れている時に大きさを測ると0になり、線が見えなくなっていた（字は読めるのに線が出ない）。
+   書き始める時・枠の大きさが変わった時に、いつも測り直す */
+function fitCv(){ const r=pad.getBoundingClientRect(), d=devicePixelRatio||1; if(!r.width||!r.height) return; const w=Math.round(r.width*d), h=Math.round(r.height*d); if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; } }
+function size(){ fitCv(); redraw(); }
 function inkColor(){ return getComputedStyle(document.documentElement).getPropertyValue("--ink").trim()||"#000"; }
 function drawOn(c,w,h,col,lw){
   c.lineCap="round"; c.lineJoin="round"; c.strokeStyle=col; c.lineWidth=lw;
   for(const s of strokes){ if(!s.length) continue; c.beginPath(); c.moveTo(s[0][0]*w,s[0][1]*h);
     if(s.length===1) c.lineTo(s[0][0]*w+.1,s[0][1]*h); for(const p of s.slice(1)) c.lineTo(p[0]*w,p[1]*h); c.stroke(); }
 }
-function redraw(){ ctx.clearRect(0,0,cv.width,cv.height); drawOn(ctx,cv.width,cv.height,inkColor(),cv.width*0.028); hint.style.display=strokes.length?"none":"flex"; }
+function redraw(){ fitCv(); ctx.clearRect(0,0,cv.width,cv.height); drawOn(ctx,cv.width,cv.height,inkColor(),cv.width*0.028); hint.style.display=strokes.length?"none":"flex"; }
 function pt(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]; }
 cv.addEventListener("pointerdown",e=>{ clearTimeout(recTimer); cv.setPointerCapture(e.pointerId); cur=[pt(e)]; strokes.push(cur); redraw(); });
 cv.addEventListener("pointermove",e=>{ if(!cur) return; cur.push(pt(e)); redraw(); });
 const end=()=>{ if(cur){ cur=null; schedule(); } }; cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
-window.addEventListener("resize",size); matchMedia("(prefers-color-scheme: dark)").addEventListener("change",redraw);
+window.addEventListener("resize",size); try{ new ResizeObserver(()=>size()).observe(pad); }catch(e){} matchMedia("(prefers-color-scheme: dark)").addEventListener("change",redraw);
 document.getElementById("undo").onclick=()=>{ strokes.pop(); redraw(); schedule(); };
 document.getElementById("clear").onclick=()=>{ clearTimeout(recTimer); recId++; strokes=[]; redraw(); document.getElementById("wres").innerHTML=""; document.getElementById("wmeta").textContent=""; if(wordMode&&wordEdit>=0){ wordEdit=-1; renderWord(); } };
 size();

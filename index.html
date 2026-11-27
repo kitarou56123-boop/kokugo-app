@@ -507,7 +507,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.72（2026-11-27）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.73（2026-11-28）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -732,11 +732,14 @@ setTimeout(async()=>{ try{ const b=await getData("mjv-1.bin"); const t=await new
   for(const l of t.split("\n")){ const [k,v,f,s,d]=l.split("\t"); if(!k||!d) continue; if(!ALTFORM.has(k)) ALTFORM.set(k,[]); ALTFORM.get(k).push({v,f,s,d}); } }catch(e){}
   /* ver.1.69：役所の追加の字（行政事務標準文字の追加分・デジタル庁）のうち、元の字がはっきり分かった約1,600形 */
   try{ const b=await getData("gjv-1.bin"); const t=await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-    for(const l of t.split("\n")){ const [k,v,f,s,d]=l.split("\t"); if(!k||!d) continue; if(!ALTFORM.has(k)) ALTFORM.set(k,[]); ALTFORM.get(k).push({v,f,s,d}); } }catch(e){} },800);
+    for(const l of t.split("\n")){ const [k,v,f,s,d]=l.split("\t"); if(!k||!d) continue; if(!ALTFORM.has(k)) ALTFORM.set(k,[]); ALTFORM.get(k).push({v,f,s,d}); } }catch(e){}
+  /* ver.1.73：戸籍の字の一覧にあって入っていなかった約870字も、部品・画数・部首で探せるように（kext-2・kradx-2）。元の字が確かめられていない役所の追加の字（約7,800形）。形の近い普通の字ごとに並べる */
+  try{ const b=await getData("gju-1.bin"); const t=await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    await eachLine(t,l=>{ const [c,bs,d]=l.split("\t"); if(!c||!d) return; for(const k of [...bs]){ if(!GJU.has(k)) GJU.set(k,[]); GJU.get(k).push({c,d}); } }); }catch(e){} },800);
 let KEXT_READY=false;
 const KEXT_P=(async()=>{
   try{
-    const bin=await getData("kext-1.bin");
+    const bin=await getData("kext-2.bin");
     const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
     for(const l of txt.split("\n")){
       const [k,st,on,kun,v,rd]=l.split("\t"); if(!k||DB.has(k)) continue;
@@ -2334,7 +2337,7 @@ function dictReading(w){
   return "";
 }
 /* v89：読みがなの辞書が知らない言葉（秋葵＝おくら、蒲公英など）の読み。v91：国語辞典の見出し（心太＝ところてん など）を加えて約18万語 */
-let YOMI=null, YOMIALT=null, YOMIP=null, YOMIREV=null; const YOMITAG=new Map();
+let YOMI=null, YOMIALT=null, YOMIP=null, YOMIREV=null; const YOMITAG=new Map(); const GJU=new Map();
 /* ver.1.71：大きな辞書を読む時、3万行ごとに一息つく（読み込み中も画面が固まらないように） */
 async function eachLine(txt,fn){ let i=0,n=0; const L=txt.length; while(i<L){ let j=txt.indexOf("\n",i); if(j<0) j=L; fn(txt.slice(i,j)); i=j+1; if(++n%30000===0) await new Promise(r=>setTimeout(r,0)); } }
 function yomiRevKey(r){ return toHira(String(r||"")).replace(/[ー・\s]/g,""); }
@@ -4502,7 +4505,7 @@ const KRAD_SRC="𱁬一雨二厶月立竜田乙\n䨺一雨二厶\n䨻雨田\n�
   /* 元データで部品が抜けている字を補う（例：兪の右下の刂） */
   for(const [k,p] of [["兪","刂"],["俞","刂"]]) if(KR.has(k)) KR.get(k).add(p);
   /* ver.1.34：戸籍・人名などの字（約3万8千字）の部品。字の組み立て（IDS）から作ったもの。裏で読み込んで足す */
-  (async()=>{ try{ const bin=await getData("kradx-1.bin"); const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  (async()=>{ try{ const bin=await getData("kradx-2.bin"); const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
     for(const l of txt.split("\n")){ const a=[...l]; if(a.length>1 && !KR.has(a[0])) KR.set(a[0],new Set(a.slice(1))); }
     for(const ps of KR.values()) if(ps.has("ノ")&&ps.has("土")&&ps.has("口")) ps.add("牛");
     if(built) update(); }catch(e){} })();
@@ -4877,6 +4880,19 @@ function radicalOf(k){
       h+='<div class="oldnote">戸籍・保険証などで使われる形です（役所の字の一覧より）。絵を押すとコピーできます。</div>';
       d.innerHTML=h; const mb=d.querySelector(".altmore"); if(mb) mb.onclick=()=>{ mb.nextElementSibling.hidden=false; mb.remove(); };
       dl.append(t,d); } }catch(e){}
+    // ver.1.73：形が近い役所の字（元の字は未確認）。押すと番号と「読みを知らせる」が出る
+    try{ const g=GJU.get(k); if(g&&g.length){ const dl=document.getElementById("sinfo"); const t=document.createElement("dt"); t.textContent="形が近い役所の字"; const d=document.createElement("dd");
+      const sv=x=>'<svg class="oldsvg" viewBox="0 -450 512 512"><g transform="scale(1,-1)"><path d="'+x.d+'"/></g></svg>';
+      d.innerHTML='<button type="button" class="altmore">形が近い役所の字を見る（'+g.length+'）</button><div class="altrow gjurow" hidden>'+g.map((x,i)=>'<button type="button" class="gjub" data-i="'+i+'">'+sv(x)+'</button>').join("")+'</div><div class="gjusel" hidden></div><div class="oldnote">戸籍で使われている字ですが、元の字や読みはまだ確かめられていません。形だけで近い字に並べています。</div>';
+      const mb=d.querySelector(".altmore"); mb.onclick=()=>{ mb.nextElementSibling.hidden=false; mb.remove(); };
+      const selBox=d.querySelector(".gjusel");
+      d.querySelector(".gjurow").onclick=e=>{ const b=e.target.closest(".gjub"); if(!b) return; const x=g[+b.dataset.i]; const no="GJ-"+x.c;
+        d.querySelectorAll(".gjub.on").forEach(y=>y.classList.remove("on")); b.classList.add("on");
+        selBox.hidden=false; selBox.innerHTML='<div class="gjubig">'+sv(x)+'</div><div class="gjuinfo"><div>番号：<b class="gjuno"></b></div><div class="oldnote">本人に、普段どの字で代わりに書いているかと、読みを聞いて知らせてください。番号はコピーされるので、フォームの最初の欄に「番号 → 代わりの字」の形で貼り付けてください。</div><a class="reqlink gjureq" target="_blank" rel="noopener" href="https://docs.google.com/forms/d/e/1FAIpQLSfz4t4h0UfDlg1K5QwOX7UMt8j8BWSzXr2-k0NrNnsQX-EJhw/viewform">この字の代わりの字・読みを知らせる</a></div>';
+        selBox.querySelector(".gjuno").textContent=no;
+        selBox.querySelector(".gjureq").addEventListener("click",()=>{ try{ navigator.clipboard.writeText(no+" → "); }catch(err){} });
+      };
+      dl.append(t,d); } }catch(e){}
     // ver.1.37：文字コード（控えめに一番下へ）
     try{ const dl=document.getElementById("sinfo"); const cp=k.codePointAt(0).toString(16).toUpperCase().padStart(4,"0");
       const t=document.createElement("dt"); t.className="ucode"; t.textContent="文字コード"; const d=document.createElement("dd"); d.className="ucode"; d.textContent="U+"+cp; dl.append(t,d); }catch(e){} };
@@ -4893,6 +4909,9 @@ function radicalOf(k){
 #cpytoast.on{opacity:1}
 #sinfo .altrow{display:flex;flex-wrap:wrap;gap:.5em}#sinfo .altrow .oldsvg{width:3.4em;height:3.4em}#sinfo .altmore{margin:.5em 0 .3em;padding:.45em .9em;border:1px solid var(--line,#ccd);border-radius:10px;background:#fff;color:var(--ink);font-size:.85rem}#sinfo .oldnote{font-size:.75rem;color:var(--sub);line-height:1.5;margin-top:2px}
 #sinfo .ucode{font-size:.75rem;color:var(--sub);opacity:.8}
+#sinfo .gjub{padding:2px;border:1.5px solid transparent;border-radius:8px;background:#fff;line-height:0}#sinfo .gjub.on{border-color:#c0392b}
+#sinfo .gjusel{display:flex;gap:12px;align-items:center;margin:.6em 0;padding:10px;border:1px solid var(--line,#ccd);border-radius:10px;background:#fff}
+#sinfo .gjubig .oldsvg{width:4.5em;height:4.5em}#sinfo .gjuinfo{flex:1;min-width:0}#sinfo .gjureq{margin:.5em 0 0;width:auto;text-align:center}#sinfo .gjusel,#sinfo .gjurow{max-width:100%;box-sizing:border-box}#sinfo dd{min-width:0}
 #sinfo .radc{font-family:var(--serif);font-size:1.35em;font-weight:700;color:#2f5d62}</style>
 <script>
 /* ver.1.41：スマホの「戻る」で閉じないように。手書き以外の画面や、開いた画面がある時は、戻るで手書きのトップへ戻る */

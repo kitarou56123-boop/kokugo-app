@@ -71,7 +71,8 @@ a.btn{display:block;text-align:center;text-decoration:none}
 .krows{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .krows button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:var(--serif);font-size:1.25rem;font-weight:700;padding:8px 0;border-radius:10px;cursor:pointer}
 .krows button[aria-pressed="true"]{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
-.krows.strk button{font-family:inherit;font-size:1rem;padding:7px 0}
+.cand.stk{position:relative}
+.stk-n{position:absolute;top:3px;left:5px;font-family:system-ui,sans-serif;font-size:.68rem;font-weight:700;line-height:1;color:#fff;background:var(--accent);padding:2px 4px;border-radius:5px;pointer-events:none}
 .klist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .kitem{text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer}
 .kitem b{display:block;font-family:var(--serif);font-size:1.12rem;font-weight:700;line-height:1.45}
@@ -1422,25 +1423,26 @@ function nameRead(s){
 }
 function showNameRead(s,nlist,only){
   const t=document.createElement("p"); t.className="section-t"; if(!only) t.style.marginTop="18px";
-  t.textContent=`名前で「${s}」と読む漢字（${nlist.length}字）`; singleWrap.appendChild(t);
-  freqStroke(nlist);
+  t.textContent=`名前で「${s}」と読む漢字（${nlist.length}字・画数順）`; singleWrap.appendChild(t);
+  freqStroke(nlist,true);
 }
-/* ver.1.77：よく使う字は、よく使う順にそのまま並べる。それ以外の珍しい字は、画数のボタン（あ行・か行のように）で選んで出す */
-function freqStroke(list){
+/* ver.1.77：よく使う字はそのまま並べ（よみ＝よく使う順、名前＝画数順）、珍しい字はその下に画数順で並べる。画数が変わる所に「○画」 */
+function strokeGrid(list){
+  const stOf=k=>{ const e=DB.get(k); return e&&e.st?e.st:999; };
+  const g=document.createElement("div"); g.className="grid"; let last=-1;
+  list.slice().sort((a,b)=>stOf(a)-stOf(b)).forEach(k=>{ const n=stOf(k);
+    const b=candBtn(k);
+    if(n!==last){ last=n; const h=document.createElement("span"); h.className="stk-n"; h.textContent=n<999?`${n}画`:"?画"; b.classList.add("stk"); b.appendChild(h); }
+    g.appendChild(b); });
+  singleWrap.appendChild(g);
+}
+function freqStroke(list,byStroke){
   const fqOf=k=>{ const e=DB.get(k); return e&&e.fq!=null?e.fq:99999; };
   const common=list.filter(k=>fqOf(k)<99999), rare=list.filter(k=>fqOf(k)>=99999);
-  if(common.length){ const g=document.createElement("div"); g.className="grid"; common.forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g); }
+  if(common.length){ if(byStroke) strokeGrid(common); else { const g=document.createElement("div"); g.className="grid"; common.forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g); } }
   if(!rare.length) return;
-  const stOf=k=>{ const e=DB.get(k); return e&&e.st?e.st:0; };
-  const groups=new Map(); for(const k of rare){ const n=stOf(k); if(!groups.has(n)) groups.set(n,[]); groups.get(n).push(k); }
-  const keys=[...groups.keys()].sort((a,b)=>(a||999)-(b||999));
-  const t=document.createElement("p"); t.className="meta"; t.style.margin="14px 0 6px";
-  t.textContent=common.length?`他の字（${rare.length}字）　画数を押すと出ます`:`画数を押すと出ます（${rare.length}字）`; singleWrap.appendChild(t);
-  const row=document.createElement("div"); row.className="krows strk"; singleWrap.appendChild(row);
-  const g=document.createElement("div"); g.className="grid"; g.style.marginTop="8px"; singleWrap.appendChild(g);
-  const pick=(n,b)=>{ for(const x of row.children) x.setAttribute("aria-pressed",x===b?"true":"false"); g.innerHTML=""; groups.get(n).forEach(k=>g.appendChild(candBtn(k))); };
-  keys.forEach(n=>{ const b=document.createElement("button"); b.type="button"; b.textContent=n?`${n}画`:"他"; b.setAttribute("aria-pressed","false"); b.onclick=()=>pick(n,b); row.appendChild(b); });
-  if(!common.length) pick(keys[0],row.children[0]);
+  if(common.length){ const t=document.createElement("p"); t.className="meta"; t.style.margin="14px 0 2px"; t.textContent=`珍しい字（${rare.length}字・画数順）`; singleWrap.appendChild(t); }
+  strokeGrid(rare);
 }
 q.addEventListener("input",searchSingle);
 /* v95：クリアボタン。入力と結果をまとめて消して、すぐ次を入力できるようにする */

@@ -507,7 +507,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.76（2026-11-28）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.77（2026-11-28）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -1402,12 +1402,31 @@ function searchSingle(){
   if(hid.length && document.fonts && document.fonts.load && !showAsked.has(s)){ showAsked.add(s);
     document.fonts.load('500 36px "Noto Serif JP"',hid.join("")).then(()=>{ hid.forEach(k=>showCache.delete(k)); if(toHira(q.value.trim())===s && hid.some(k=>canShow(k))) searchSingle(); }).catch(()=>{}); }
   const list=all.filter(k=>canShow(k));
+  /* ver.1.77：名前の読み（嘉＝よし など）でも出す。ふつうの読みの字のあとに、別の段で並べる */
+  const nlist=nameRead(s).filter(k=>!all.includes(k) && canShow(k));
+  if(!list.length && nlist.length){ showNameRead(s,nlist,true); return; }
   const t=document.createElement("p"); t.className="section-t"; t.textContent=list.length?`「${s}」と読む漢字（${list.length}字・よく使う順）`:`「${s}」と1文字で読む漢字は見つかりません`;
   singleWrap.appendChild(t);
   if(!list.length){ t.classList.add("nf"); if(document.querySelector("#wordsWrap .reqlink")){ t.remove(); return; } const a=document.createElement("a"); a.className="reqlink"; a.href="https://docs.google.com/forms/d/e/1FAIpQLSfz4t4h0UfDlg1K5QwOX7UMt8j8BWSzXr2-k0NrNnsQX-EJhw/viewform"; a.target="_blank"; a.rel="noopener"; a.textContent="📮 この字が出ない時は知らせる"; singleWrap.appendChild(a); return; }
   const g=document.createElement("div"); g.className="grid"; list.slice(0,80).forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g);
   if(list.length>80){ const m=document.createElement("button"); m.type="button"; m.className="btn"; m.style.marginTop="8px"; m.textContent=`残り${list.length-80}字を見る（戸籍などで使う珍しい字）`;
     m.onclick=()=>{ list.slice(80).forEach(k=>g.appendChild(candBtn(k))); m.remove(); }; singleWrap.appendChild(m); }
+  if(nlist.length) showNameRead(s,nlist,false);
+}
+/* 名前の読み → 字 の一覧（初めて使う時に作る） */
+let NAME_IDX=null;
+function nameRead(s){
+  if(!NAME_IDX){ NAME_IDX=new Map();
+    for(const [k,v] of NANORI) for(const r of new Set(v.split(","))){ if(!r) continue; if(!NAME_IDX.has(r)) NAME_IDX.set(r,[]); NAME_IDX.get(r).push(k); } }
+  const fq=k=>{ const e=DB.get(k); return e&&e.fq!=null?e.fq:1e9; };
+  return (NAME_IDX.get(s)||[]).slice().sort((a,b)=>fq(a)-fq(b));
+}
+function showNameRead(s,nlist,only){
+  const t=document.createElement("p"); t.className="section-t"; if(!only) t.style.marginTop="18px";
+  t.textContent=`名前で「${s}」と読む漢字（${nlist.length}字）`; singleWrap.appendChild(t);
+  const g=document.createElement("div"); g.className="grid"; nlist.slice(0,40).forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g);
+  if(nlist.length>40){ const m=document.createElement("button"); m.type="button"; m.className="btn"; m.style.marginTop="8px"; m.textContent=`残り${nlist.length-40}字を見る`;
+    m.onclick=()=>{ nlist.slice(40).forEach(k=>g.appendChild(candBtn(k))); m.remove(); }; singleWrap.appendChild(m); }
 }
 q.addEventListener("input",searchSingle);
 /* v95：クリアボタン。入力と結果をまとめて消して、すぐ次を入力できるようにする */

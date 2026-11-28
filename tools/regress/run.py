@@ -25,7 +25,7 @@ async def main():
     await ctx.route("https://huggingface.co/LT8/**", lambda r: r.fulfill(path="/home/claude/ocrtest/lt8_"+r.request.url.split('/')[-1], headers={"Access-Control-Allow-Origin":"*"}))
     await ctx.route("https://fonts.googleapis.com/**", lambda r: r.abort())
     pg=await ctx.new_page(); pg.set_default_timeout(0); pg.on('console',lambda m: print(m.text[:150],flush=True) if m.text.startswith('CASE') or 'rror' in m.text else None)
-    print("goto",flush=True); await pg.goto("http://localhost:8765/index.html",wait_until="domcontentloaded",timeout=60000); print("loaded",flush=True); await pg.wait_for_timeout(3000); print("eval",flush=True)
+    print("goto",flush=True); await pg.goto(os.environ.get("URL","http://localhost:8765/index.html"),wait_until="domcontentloaded",timeout=60000); print("loaded",flush=True); await pg.wait_for_timeout(3000); print("eval",flush=True)
     if MODE=='js':
       print(await pg.evaluate(open(os.environ['JS']).read()),flush=True); await b.close(); return
     if MODE=='dbg':
@@ -36,12 +36,12 @@ async def main():
       await b.close(); return
     try: extra=open('/home/claude/regress/extra.js' if MODE!='det' else '/home/claude/regress/extra_det.js').read()
     except: extra=''
-    res=await pg.evaluate("""async([MODE,LIMIT,EXTRA,FILT])=>{
-      camBusy=true; try{localStorage.setItem('gariben-prefetch','1');}catch(e){} if(EXTRA) (0,eval)(EXTRA);
+    res=await pg.evaluate("""async([MODE,LIMIT,EXTRA,FILT,REG])=>{
+      try{camBusy=true;}catch(e){} window.__REG=REG; try{localStorage.setItem('gariben-prefetch','1');}catch(e){} if(EXTRA) (0,eval)(EXTRA);
       if(MODE==='notess'){ window.ocrTry=async()=>{ throw new Error('no tess'); }; }
       if(MODE==='det' && window.__setupDet) await window.__setupDet();
-      let cases=(await (await fetch('_reg/cases.json')).json()); if(FILT) cases=cases.filter(c=>FILT.split(',').some(f=>c.tag.includes(f)||c.ans===f)); cases=cases.slice(0,LIMIT); const out=[];
-      for(const c of cases){ if(MODE==='det' && c.mode!=='photo') continue; const im=new Image(); im.src='_reg/'+c.f; await im.decode();
+      let cases=(await (await fetch((window.__REG||'_reg')+'/cases.json')).json()); if(FILT) cases=cases.filter(c=>FILT.split(',').some(f=>c.tag.includes(f)||c.ans===f)); cases=cases.slice(0,LIMIT); const out=[];
+      for(const c of cases){ if(MODE==='det' && c.mode!=='photo') continue; const im=new Image(); im.src=(window.__REG||'_reg')+'/'+c.f; await im.decode();
         const src=document.createElement('canvas'); src.width=im.width; src.height=im.height; src.getContext('2d').drawImage(im,0,0);
         console.log('CASE start '+c.f); const t0=performance.now(); let txt='';
         try{
@@ -58,7 +58,7 @@ async def main():
           }
         }catch(e){ txt='ERR:'+e.message; }
         console.log('CASE '+c.f+' '+c.tag+' -> '+JSON.stringify(txt)+' '+Math.round(performance.now()-t0)); out.push({f:c.f,ans:c.ans,mode:c.mode,tag:c.tag,got:txt,ms:Math.round(performance.now()-t0)}); }
-      return out; }""",[MODE,LIMIT,extra,os.environ.get("FILT","")])
+      return out; }""",[MODE,LIMIT,extra,os.environ.get("FILT",""),os.environ.get("REG","_reg")])
     json.dump(res,open(f'/home/claude/regress/res_{MODE}{os.environ.get("SUF","")}.json','w'),ensure_ascii=False)
     await b.close()
 asyncio.run(main())

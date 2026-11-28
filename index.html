@@ -509,7 +509,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.86（2026-11-28）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.87（2026-11-28）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -2494,6 +2494,12 @@ async function showWordResult(text,info){
     else p.textContent=line;
     camRes.appendChild(p);
   });
+  /* ver.1.87：1字だけの時は、ふりがなの下に音読み・訓読みを全部出す（芳 → 音読み ほう／訓読み かんばしい・かおる） */
+  { const cs=[...all.replace(/\s+/g,"")];
+    if(cs.length===1 && DB.has(cs[0])){ const e=DB.get(cs[0]), clean=a=>[...new Set(a.filter(x=>x&&!/^-|-$/.test(x)).map(x=>x.replace(/[.\-]/g,"")))];
+      const on=clean(e.on), kun=clean(e.kun), yp=document.createElement("p"); yp.className="meta"; yp.style.cssText="margin:2px 0 8px;font-size:1rem;line-height:1.7";
+      yp.textContent=[on.length?"音読み："+on.join("、"):"", kun.length?"訓読み："+kun.join("、"):""].filter(Boolean).join("　");
+      if(yp.textContent) camRes.appendChild(yp); } }
   if(nearAlts.length){
     const q=document.createElement("p"); q.className="meta"; q.textContent=nearKeep.length?"「"+nearKeep.join("・")+"」という言葉は辞書にありません。もしかして（押すと調べ直します）：":"自動で直しました。違う時は、正しいほうを押してください：";
     const row=document.createElement("div"); row.style.cssText="display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px";
@@ -2700,7 +2706,8 @@ async function v5Line(src){
   let s="", pmin=1, prev=-1;
   for(let t=0;t<T;t++){ let bi=0,bv=-1; for(let k=0;k<C;k++){ const v=o[t*C+k]; if(v>bv){ bv=v; bi=k; } }
     if(bi!==prev && bi!==0){ s+=v5Dict[bi]||""; if(bv<pmin) pmin=bv; } prev=bi; }
-  s=[...s.trim()].map(c=>V5_SJ.get(c)||({"·":"・","•":"・"})[c]||c).join("");   // 中国で使う形（変→变 など）で読んだ時は、日本の形に直す
+  s=[...s.trim()].map(c=>V5_SJ.get(c)||({"·":"・","•":"・"})[c]||c).join("");
+  if(/\p{Script=Han}/u.test(s)) s=s.replace(/[□◻▢]/g,"口");   // 漢字といっしょの「□」は、たいてい「口」   // 中国で使う形（変→变 など）で読んだ時は、日本の形に直す
   return {t:s, p:s?pmin:0};
 }
 /* 囲んだ所が何行かある時は、字のない すき間で1行ずつに分ける（縦書きは右の列から） */
@@ -2747,6 +2754,15 @@ function v5Stack(col){
   const chs=[runs[0].slice()];
   for(const r of runs.slice(1)){ const cur=chs[chs.length-1], gap=r[0]-cur[1];
     if(gap<cw*0.12 || (r[1]-cur[0])<=cw*1.1) cur[1]=r[1]; else chs.push(r.slice()); }
+  /* ver.1.87：字と字のすき間が狭い印刷（辛口 など）で2字が1つにつながった時は、一番広いすき間で分け直す */
+  for(let guard=0;guard<20;guard++){
+    const i=chs.findIndex(a=>a[1]-a[0]>cw*1.35); if(i<0) break;
+    const [a,b]=chs[i], inner=runs.filter(r=>r[0]>a && r[1]<=b);
+    let best=-1,bv=1e9; for(let j=0;j<inner.length;j++){ const cut=inner[j][0], h1=cut-a, h2=b-cut; const v=Math.abs(h1-cw)+Math.abs(h2-cw)*0.5; if(h1>=cw*0.4 && h2>=cw*0.3 && v<bv){ bv=v; best=cut; } }
+    if(best<0) break;
+    const gapEnd=best, prevEnd=Math.max(...runs.filter(r=>r[1]<=best).map(r=>r[1]));
+    chs.splice(i,1,[a,prevEnd],[gapEnd,b]);
+  }
   if(chs.length<=1) return col;
   const pad=Math.round(cw*0.12), H=Math.max(...chs.map(a=>a[1]-a[0]))+pad*2, cellW=cw+pad*2;
   const o=document.createElement("canvas"); o.width=Math.round(chs.length*cellW/k); o.height=Math.round(H/k);
@@ -2822,7 +2838,7 @@ async function v5Variant(prepped,best){
     const re=[]; for(let k=0;k<est;k++){ const a=Math.round(L*k/est), b=Math.round(L*(k+1)/est);
       const c=document.createElement("canvas"), sw=vert?Tk:b-a, sh=vert?b-a:Tk, pad=Math.round(Tk*0.15); c.width=sw+pad*2; c.height=sh+pad*2;
       const g=c.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height); g.drawImage(prepped,vert?x0:x0+a,vert?y0+a:y0,sw,sh,pad,pad,sw,sh);
-      const x=await v5Line(c); re.push([...x.t][0]||""); }
+      const x=await v5Line(c); const ch=[...x.t][0]||""; re.push(ch==="□"?"口":ch); }
     if(re.every(Boolean)){ chars=re; }
   }
   const N=chars.length, pos=chars.map((c,k)=>fam(c)?k:-1).filter(k=>k>=0);

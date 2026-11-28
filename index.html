@@ -509,7 +509,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.81（2026-11-28）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.82（2026-11-28）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -1020,7 +1020,7 @@ async function loadHandModel(){
   if(handSession && handLabels) return;
   if(handLoading) return handLoading;
   handLoading=(async()=>{
-    if(strokes.length) wmeta.textContent="手書き認識エンジンを読み込んでいます（初回のみ約15MB）…";
+    if(strokes.length) wmeta.textContent="手書き認識エンジンを準備しています…";
     await loadOrt();
     const labelsResponse=await fetch(HAND_BASE+"labels.json");
     if(!labelsResponse.ok) throw new Error("文字一覧を読み込めません");
@@ -1327,7 +1327,7 @@ function rankCands(probs){
 async function recognize(){
   const id=++recId;
   if(!strokes.length) return;
-  wmeta.textContent=(handSession&&handLabels)?"候補を探しています…":"手書き認識エンジンを準備しています（初回のみ約15MB）…";
+  wmeta.textContent=(handSession&&handLabels)?"候補を探しています…":"手書き認識エンジンを準備しています…";
   try{
     await loadHandModel();
     if(id!==recId) return;
@@ -2975,8 +2975,7 @@ async function ocrBest(img,plan,alive,onStep,depth){
   /* ver.1.80：囲んだ字は、まず新しいエンジンで読む。日本語として読めたら、それを使う（Tesseractは読めなかった時だけ） */
   if(camSelR && !depth && camLang!=="eng"){
     try{
-      if(!v5Sess) cstat.textContent="新しい読み取りエンジンを準備しています（初回のみ約16MB）…";
-      else cstat.textContent="読み取っています…";
+      cstat.textContent="読み取っています…";   // ver.1.82：部品は最初に全部取り込むので、容量の案内は出さない
       const v=await v5Read(img);
       if(!alive()) return null;
       /* 1字だけで自信がない時（珍しい魚へんの字など）は、今までの読み方（手書きエンジンで確かめる）に任せる */

@@ -509,7 +509,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.78（2026-11-28）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.79（2026-11-28）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -4933,13 +4933,13 @@ function radicalOf(k){
       const a2=OLDFORM[k]?a.filter(x=>x.v!==OLDVS[k]):a; const big=a2.filter(x=>x.f!=="s"), small=a2.filter(x=>x.f==="s");
       let h=big.length?'<div class="altrow">'+big.map(x=>cpyWrap(altSvg(x),k,x.v)).join("")+'</div>':'';
       if(small.length) h+='<button type="button" class="altmore">細かい違いの形も見る（'+small.length+'）</button><div class="altrow" hidden>'+small.map(x=>cpyWrap(altSvg(x),k,x.v)).join("")+'</div>';
-      h+='<div class="oldnote">戸籍・保険証などで使われる形です（役所の字の一覧より）。絵を押すとコピーできます。</div>';
+      h+='<div class="oldnote">戸籍・保険証などで使われる形です（戸籍の字の一覧より）。絵を押すとコピーできます。</div>';
       d.innerHTML=h; const mb=d.querySelector(".altmore"); if(mb) mb.onclick=()=>{ mb.nextElementSibling.hidden=false; mb.remove(); };
       dl.append(t,d); } }catch(e){}
     // ver.1.73：形が近い役所の字（元の字は未確認）。押すと番号と「読みを知らせる」が出る
-    try{ const g=GJU.get(k); if(g&&g.length){ const dl=document.getElementById("sinfo"); const t=document.createElement("dt"); t.textContent="形が近い役所の字"; const d=document.createElement("dd");
+    try{ const g=GJU.get(k); if(g&&g.length){ const dl=document.getElementById("sinfo"); const t=document.createElement("dt"); t.textContent="形が近い戸籍の字"; const d=document.createElement("dd");
       const sv=x=>'<svg class="oldsvg" viewBox="0 -450 512 512"><g transform="scale(1,-1)"><path d="'+x.d+'"/></g></svg>';
-      d.innerHTML='<button type="button" class="altmore">形が近い役所の字を見る（'+g.length+'）</button><div class="altrow gjurow" hidden>'+g.map((x,i)=>'<button type="button" class="gjub" data-i="'+i+'">'+sv(x)+'</button>').join("")+'</div><div class="gjusel" hidden></div><div class="oldnote">戸籍で使われている字ですが、元の字や読みはまだ確かめられていません。形だけで近い字に並べています。</div>';
+      d.innerHTML='<button type="button" class="altmore">形が近い戸籍の字を見る（'+g.length+'）</button><div class="altrow gjurow" hidden>'+g.map((x,i)=>'<button type="button" class="gjub" data-i="'+i+'">'+sv(x)+'</button>').join("")+'</div><div class="gjusel" hidden></div><div class="oldnote">戸籍で使われている字ですが、元の字や読みはまだ確かめられていません。形だけで近い字に並べています。</div>';
       const mb=d.querySelector(".altmore"); mb.onclick=()=>{ mb.nextElementSibling.hidden=false; mb.remove(); };
       const selBox=d.querySelector(".gjusel");
       d.querySelector(".gjurow").onclick=e=>{ const b=e.target.closest(".gjub"); if(!b) return; const x=g[+b.dataset.i]; const no="GJ-"+x.c;

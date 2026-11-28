@@ -507,7 +507,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.75（2026-11-28）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.76（2026-11-28）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -1367,6 +1367,22 @@ async function recognize(){
   }
 }
 
+/* ver.1.76：スマホに形（フォント）がなく「☒」になる字は、よみの一覧に出さない */
+const showCache=new Map(); let showCx=null, showRef=null; const showAsked=new Set();
+function showPix(ch){ showCx.clearRect(0,0,48,48); showCx.fillText(ch,24,24); const d=showCx.getImageData(0,0,48,48).data; let n=0,h=0; for(let i=3;i<d.length;i+=4){ if(d[i]>100){ n++; h=(h*31+i)|0; } } return n+":"+h; }
+function canShow(ch){
+  if(showCache.has(ch)) return showCache.get(ch);
+  let ok=true;
+  try{
+    if(!showCx){ const cv=document.createElement("canvas"); cv.width=cv.height=48; showCx=cv.getContext("2d",{willReadFrequently:true});
+      showCx.font='500 36px '+(getComputedStyle(document.documentElement).getPropertyValue("--serif").trim()||"serif");
+      showCx.textAlign="center"; showCx.textBaseline="middle"; showCx.fillStyle="#000";
+      showRef=new Set(["\u0378","\u{3FFF0}","\u{2FFF0}"].map(showPix)); }
+    const px=showPix(ch); ok=!(px.startsWith("0:") || showRef.has(px));
+  }catch(e){ ok=true; }
+  showCache.set(ch,ok); return ok;
+}
+
 /* reading search (no AI) */
 const q=document.getElementById("q"), singleWrap=document.getElementById("singleWrap"), wordsWrap=document.getElementById("wordsWrap");
 function searchSingle(){
@@ -1380,7 +1396,12 @@ function searchSingle(){
     return;
   }
   if(!/^[ぁ-ゖー]+$/.test(s)) return;
-  const list=(IDX.get(s)||[]).slice().sort((a,b)=>DB.get(a).fq-DB.get(b).fq);
+  const all=(IDX.get(s)||[]).slice().sort((a,b)=>DB.get(a).fq-DB.get(b).fq);
+  const hid=all.filter(k=>!canShow(k));
+  /* 文字の形をまだ読み込んでいないだけかもしれないので、一度だけ読み込んでから確かめ直す */
+  if(hid.length && document.fonts && document.fonts.load && !showAsked.has(s)){ showAsked.add(s);
+    document.fonts.load('500 36px "Noto Serif JP"',hid.join("")).then(()=>{ hid.forEach(k=>showCache.delete(k)); if(toHira(q.value.trim())===s && hid.some(k=>canShow(k))) searchSingle(); }).catch(()=>{}); }
+  const list=all.filter(k=>canShow(k));
   const t=document.createElement("p"); t.className="section-t"; t.textContent=list.length?`「${s}」と読む漢字（${list.length}字・よく使う順）`:`「${s}」と1文字で読む漢字は見つかりません`;
   singleWrap.appendChild(t);
   if(!list.length){ t.classList.add("nf"); if(document.querySelector("#wordsWrap .reqlink")){ t.remove(); return; } const a=document.createElement("a"); a.className="reqlink"; a.href="https://docs.google.com/forms/d/e/1FAIpQLSfz4t4h0UfDlg1K5QwOX7UMt8j8BWSzXr2-k0NrNnsQX-EJhw/viewform"; a.target="_blank"; a.rel="noopener"; a.textContent="📮 この字が出ない時は知らせる"; singleWrap.appendChild(a); return; }

@@ -1435,7 +1435,7 @@ function freqStroke(list){
   const groups=new Map(); for(const k of rare){ const n=stOf(k); if(!groups.has(n)) groups.set(n,[]); groups.get(n).push(k); }
   const keys=[...groups.keys()].sort((a,b)=>(a||999)-(b||999));
   const t=document.createElement("p"); t.className="meta"; t.style.margin="14px 0 6px";
-  t.textContent=common.length?`ほかの珍しい字（${rare.length}字）　画数を押すと出ます`:`画数を押すと出ます（${rare.length}字）`; singleWrap.appendChild(t);
+  t.textContent=common.length?`他の字（${rare.length}字）　画数を押すと出ます`:`画数を押すと出ます（${rare.length}字）`; singleWrap.appendChild(t);
   const row=document.createElement("div"); row.className="krows strk"; singleWrap.appendChild(row);
   const g=document.createElement("div"); g.className="grid"; g.style.marginTop="8px"; singleWrap.appendChild(g);
   const pick=(n,b)=>{ for(const x of row.children) x.setAttribute("aria-pressed",x===b?"true":"false"); g.innerHTML=""; groups.get(n).forEach(k=>g.appendChild(candBtn(k))); };

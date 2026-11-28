@@ -71,6 +71,7 @@ a.btn{display:block;text-align:center;text-decoration:none}
 .krows{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .krows button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:var(--serif);font-size:1.25rem;font-weight:700;padding:8px 0;border-radius:10px;cursor:pointer}
 .krows button[aria-pressed="true"]{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
+.krows.strk button{font-family:inherit;font-size:1rem;padding:7px 0}
 .klist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .kitem{text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer}
 .kitem b{display:block;font-family:var(--serif);font-size:1.12rem;font-weight:700;line-height:1.45}
@@ -1408,9 +1409,7 @@ function searchSingle(){
   const t=document.createElement("p"); t.className="section-t"; t.textContent=list.length?`「${s}」と読む漢字（${list.length}字・よく使う順）`:`「${s}」と1文字で読む漢字は見つかりません`;
   singleWrap.appendChild(t);
   if(!list.length){ t.classList.add("nf"); if(document.querySelector("#wordsWrap .reqlink")){ t.remove(); return; } const a=document.createElement("a"); a.className="reqlink"; a.href="https://docs.google.com/forms/d/e/1FAIpQLSfz4t4h0UfDlg1K5QwOX7UMt8j8BWSzXr2-k0NrNnsQX-EJhw/viewform"; a.target="_blank"; a.rel="noopener"; a.textContent="📮 この字が出ない時は知らせる"; singleWrap.appendChild(a); return; }
-  const g=document.createElement("div"); g.className="grid"; list.slice(0,80).forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g);
-  if(list.length>80){ const m=document.createElement("button"); m.type="button"; m.className="btn"; m.style.marginTop="8px"; m.textContent=`残り${list.length-80}字を見る（戸籍などで使う珍しい字）`;
-    m.onclick=()=>{ list.slice(80).forEach(k=>g.appendChild(candBtn(k))); m.remove(); }; singleWrap.appendChild(m); }
+  freqStroke(list);
   if(nlist.length) showNameRead(s,nlist,false);
 }
 /* 名前の読み → 字 の一覧（初めて使う時に作る） */
@@ -1424,9 +1423,24 @@ function nameRead(s){
 function showNameRead(s,nlist,only){
   const t=document.createElement("p"); t.className="section-t"; if(!only) t.style.marginTop="18px";
   t.textContent=`名前で「${s}」と読む漢字（${nlist.length}字）`; singleWrap.appendChild(t);
-  const g=document.createElement("div"); g.className="grid"; nlist.slice(0,40).forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g);
-  if(nlist.length>40){ const m=document.createElement("button"); m.type="button"; m.className="btn"; m.style.marginTop="8px"; m.textContent=`残り${nlist.length-40}字を見る`;
-    m.onclick=()=>{ nlist.slice(40).forEach(k=>g.appendChild(candBtn(k))); m.remove(); }; singleWrap.appendChild(m); }
+  freqStroke(nlist);
+}
+/* ver.1.77：よく使う字は、よく使う順にそのまま並べる。それ以外の珍しい字は、画数のボタン（あ行・か行のように）で選んで出す */
+function freqStroke(list){
+  const fqOf=k=>{ const e=DB.get(k); return e&&e.fq!=null?e.fq:99999; };
+  const common=list.filter(k=>fqOf(k)<99999), rare=list.filter(k=>fqOf(k)>=99999);
+  if(common.length){ const g=document.createElement("div"); g.className="grid"; common.forEach(k=>g.appendChild(candBtn(k))); singleWrap.appendChild(g); }
+  if(!rare.length) return;
+  const stOf=k=>{ const e=DB.get(k); return e&&e.st?e.st:0; };
+  const groups=new Map(); for(const k of rare){ const n=stOf(k); if(!groups.has(n)) groups.set(n,[]); groups.get(n).push(k); }
+  const keys=[...groups.keys()].sort((a,b)=>(a||999)-(b||999));
+  const t=document.createElement("p"); t.className="meta"; t.style.margin="14px 0 6px";
+  t.textContent=common.length?`ほかの珍しい字（${rare.length}字）　画数を押すと出ます`:`画数を押すと出ます（${rare.length}字）`; singleWrap.appendChild(t);
+  const row=document.createElement("div"); row.className="krows strk"; singleWrap.appendChild(row);
+  const g=document.createElement("div"); g.className="grid"; g.style.marginTop="8px"; singleWrap.appendChild(g);
+  const pick=(n,b)=>{ for(const x of row.children) x.setAttribute("aria-pressed",x===b?"true":"false"); g.innerHTML=""; groups.get(n).forEach(k=>g.appendChild(candBtn(k))); };
+  keys.forEach(n=>{ const b=document.createElement("button"); b.type="button"; b.textContent=n?`${n}画`:"他"; b.setAttribute("aria-pressed","false"); b.onclick=()=>pick(n,b); row.appendChild(b); });
+  if(!common.length) pick(keys[0],row.children[0]);
 }
 q.addEventListener("input",searchSingle);
 /* v95：クリアボタン。入力と結果をまとめて消して、すぐ次を入力できるようにする */

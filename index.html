@@ -509,7 +509,7 @@ body.fishbg .tabs.open #t-more{background:#2f5d62!important;color:#fff!important
 <style>body.fishbg .pwr small{color:#fff}body.fishbg .pwr b{color:#d6e2f7}.credx{text-align:center;margin:4px 0 0}.credx summary{display:inline-block;cursor:pointer;font-size:.75rem;color:var(--sub);text-decoration:underline;list-style:none}.credx summary::-webkit-details-marker{display:none}.credx[open] summary{margin-bottom:2px}
 </style>
 <p class="pwr"><small>Presented by</small><b>おっさん</b></p>
-  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.82（2026-11-28）</p>
+  <p class="meta" style="text-align:center;margin:4px 0 0">ver.1.83（2026-11-28）</p>
   <details class="credx"><summary>情報提供先一覧</summary><p class="meta credits" style="margin-top:4px;text-align:center">漢字の読みデータ：KANJIDIC（EDRDG、CC BY-SA 4.0）<br>英和辞書データ：EJDict-hand（kujirahand、CC0）<br>医学・専門用語：JMdict（EDRDG、CC BY-SA 4.0）<br>部品データ：KRADFILE・RADKFILE（EDRDG、CC BY-SA 4.0）<br>言葉・地名・名字・名前の追加：JMdict・JMnedict（EDRDG、CC BY-SA 4.0）<br>　　JmdictFurigana（Doublevil）、@furifont/dictionary<br>戸籍・人名の字：MJ文字情報一覧表<br>　　（IPA・文字情報技術促進協議会、CC BY-SA 2.1 JP）、Mojidata<br>名前・戸籍の字の形：IPAmj明朝（IPA、<a href="IPA_Font_License_Agreement_v1.0.txt" style="color:inherit">IPAフォントライセンスv1.0</a>）<br>役所の追加の字の形：追加文字行政事務標準明朝フォント<br>　　（デジタル庁、<a href="GJ_OFL.txt" style="color:inherit">SIL OFL 1.1</a>）<br>書き順データ：<a href="https://kanjivg.tagaini.net" style="color:inherit">KanjiVG</a>（Ulrich Apel、CC BY-SA 3.0）<br>地名データ：日本郵便 郵便番号データ（<a href="https://github.com/kufu/jpostcode-data" style="color:inherit">jpostcode-data</a>経由）</p></details>
 
 </div>
@@ -2762,6 +2762,64 @@ async function v5Read(img){
   const p=Math.min(...ls.map(x=>x.p)), text=ls.map(x=>x.t).join("\n");
   return {text,lines:ls.map(x=>({t:x.t,c:x.p*100,sc:null})),score:100*p+Math.min(jpCount(text),20),conf:p*100,lang:vert?"jpn_vert":"jpn",psm:0,v5:true,sure:p>=0.9};
 }
+/* ver.1.83：新しいエンジンは名前の旧字（髙・﨑・濵・冨など）を今の字（高・崎・浜・富）に直して読んでしまう。
+   旧字がある字は1字ずつ、字の形（明朝・ゴシック）と重ね合わせて比べ直し、旧字のほうがよく合えば旧字のまま出す */
+const V5_LOOK={"演":["濵","濱"],"濾":["濵","濱"],"寓":["髙"]};   // 新しいエンジンが旧字を別の字と読んでしまう組（濵→演 など）
+function v5Glyph(ch,font){ const S=64, c=document.createElement("canvas"); c.width=c.height=S*2; const g=c.getContext("2d",{willReadFrequently:true});
+  g.fillStyle="#fff"; g.fillRect(0,0,S*2,S*2); g.fillStyle="#000"; g.font=`${S*1.4}px ${font}`; g.textAlign="center"; g.textBaseline="middle"; g.fillText(ch,S,S);
+  return v5Norm(c); }
+/* 字のある所だけを切り出し、32×32の白黒にそろえる（少しぼかして、線の太さの違いを吸収する） */
+function v5Norm(src,box){ const w=src.width,h=src.height, d=src.getContext("2d",{willReadFrequently:true}).getImageData(0,0,w,h).data;
+  let x0=w,y0=h,x1=-1,y1=-1; const bx=box||[0,0,w,h];
+  for(let y=bx[1];y<bx[1]+bx[3];y++) for(let x=bx[0];x<bx[0]+bx[2];x++) if(d[(y*w+x)*4]<128){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  if(x1<0) return null; const N=32, o=document.createElement("canvas"); o.width=o.height=N; const g=o.getContext("2d",{willReadFrequently:true});
+  g.fillStyle="#fff"; g.fillRect(0,0,N,N); g.filter="blur(0.7px)"; g.drawImage(src,x0,y0,x1-x0+1,y1-y0+1,1,1,N-2,N-2);
+  const e=g.getImageData(0,0,N,N).data, v=new Float32Array(N*N); let m=0; for(let i=0;i<N*N;i++){ v[i]=1-e[i*4]/255; m+=v[i]; } m/=N*N;
+  let q=0; for(let i=0;i<N*N;i++){ v[i]-=m; q+=v[i]*v[i]; } q=Math.sqrt(q)||1; for(let i=0;i<N*N;i++) v[i]/=q; return v; }
+function v5Sim(a,b){ if(!a||!b) return 0; let s=0; for(let i=0;i<a.length;i++) s+=a[i]*b[i]; return s; }
+const V5_FONTS=['"Noto Serif JP",serif','"Noto Sans JP","Noto Sans CJK JP",sans-serif'];
+async function v5Variant(prepped,best){
+  if(!best || (best.lines||[]).length!==1) return best;
+  let chars=[...best.text.replace(/\s+/g,"")]; const n=chars.length;
+  const fam=c=>{ const base=(VAR_OLD2NEW.get(c)||[])[0]||c; const all=[base,...(VAR_NEW2OLD.get(base)||[])]; if(V5_LOOK[c]) all.unshift(c),all.push(...V5_LOOK[c]); return all.length>1?[...new Set(all)]:null; };
+  if(n>6) return best;
+  const vert=best.lang==="jpn_vert";
+  const w=prepped.width,h=prepped.height,d=prepped.getContext("2d",{willReadFrequently:true}).getImageData(0,0,w,h).data;
+  let x0=w,y0=h,x1=-1,y1=-1; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(d[(y*w+x)*4]<128){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  if(x1<0) return best;
+  const L=vert?y1-y0+1:x1-x0+1, Tk=vert?x1-x0+1:y1-y0+1;
+  /* 字が1つ抜けた時（濵田→田）：幅から見て1字多いはずなら、1字ずつ切って読み直す */
+  const est=Math.round(L/(Tk*1.02));
+  if(est===n+1 && n<=4){
+    const re=[]; for(let k=0;k<est;k++){ const a=Math.round(L*k/est), b=Math.round(L*(k+1)/est);
+      const c=document.createElement("canvas"), sw=vert?Tk:b-a, sh=vert?b-a:Tk, pad=Math.round(Tk*0.15); c.width=sw+pad*2; c.height=sh+pad*2;
+      const g=c.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height); g.drawImage(prepped,vert?x0:x0+a,vert?y0+a:y0,sw,sh,pad,pad,sw,sh);
+      const x=await v5Line(c); re.push([...x.t][0]||""); }
+    if(re.every(Boolean)){ chars=re; }
+  }
+  const N=chars.length, pos=chars.map((c,k)=>fam(c)?k:-1).filter(k=>k>=0);
+  if(!pos.length) return N!==n?Object.assign({},best,{text:chars.join(""),lines:[{t:chars.join(""),c:best.conf,sc:null}]}):best;
+  // 使う字の形（フォント）を先に読み込んでおく
+  try{ const all=pos.flatMap(k=>fam(chars[k])).join(""); await Promise.all(V5_FONTS.map(f=>document.fonts.load(`90px ${f}`,all))); }catch(e){}
+  // 1字ずつの場所：字のない すき間の近くで区切る
+  const cuts=[0];
+  for(let k=1;k<N;k++){ const c=Math.round(L*k/N), r=Math.round(L/N*0.3); let bi=c,bv=1e9;
+    for(let i=Math.max(1,c-r);i<=Math.min(L-2,c+r);i++){ let cnt=0; for(let j=vert?x0:y0;j<=(vert?x1:y1);j++){ const x=vert?j:x0+i, y=vert?y0+i:j; if(d[(y*w+x)*4]<128) cnt++; } const v=cnt+Math.abs(i-c)*0.02; if(v<bv){bv=v;bi=i;} }
+    cuts.push(bi); } cuts.push(L);
+  let out=chars.slice(), changed=false; best.vdbg=[];
+  for(const k of pos){
+    const box=vert?[x0,y0+cuts[k],x1-x0+1,cuts[k+1]-cuts[k]]:[x0+cuts[k],y0,cuts[k+1]-cuts[k],y1-y0+1];
+    const me=v5Norm(prepped,box); if(!me) continue;
+    const cs=fam(chars[k]), ss=cs.map(c=>Math.max(...V5_FONTS.map(f=>v5Sim(me,v5Glyph(c,f)))));
+    best.vdbg.push(cs.map((c,i)=>c+":"+ss[i].toFixed(3)).join(" "));
+    let bi=Math.max(0,cs.indexOf(chars[k]));
+    cs.forEach((c,i)=>{ if(ss[i]>ss[bi]+0.03) bi=i; });
+    if(cs[bi]!==chars[k]){ out[k]=cs[bi]; changed=true; }
+  }
+  if(!changed && N===n) return best;
+  const t=out.join("");
+  return Object.assign({},best,{text:t,lines:[{t,c:best.conf,sc:null}]});
+}
 let camSelR=0;
 /* ver.1.81：初めて開いた時に、辞書・手書き・カメラの部品を裏で全部取り込んでおく（約80MB。2回目からは通信しない）。
    途中で閉じても、次に開いた時に続きから取り込む。電波がない所でも全部の機能が使えるように */
@@ -2983,6 +3041,7 @@ async function ocrBest(img,plan,alive,onStep,depth){
       if(one) v5Weak=v;
       if(v && jpCount(v.text)>0 && !one){
         let b=v;
+        try{ const vv=await v5Variant(prepped,b); if(!alive()) return null; b=vv; }catch(e){}
         if(!b.sure){ try{ const rw=await wordRescue(prepped,b); if(!alive()) return null; b=rw; }catch(e){} }
         return b;
       }
